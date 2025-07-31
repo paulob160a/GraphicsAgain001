@@ -34,6 +34,9 @@ extern graphicsError_t fetchCharacterExtantSegment(const GRAPHICS_INT           
                                                    const alphabetCharacters_tPtr  alphabetCharacterReference,
                                                          lineSegment_tPtr        *newLineSegment);
 
+extern graphicsError_t normaliseCharacterSegments(const alphabetCharacters_tPtr      characterReference,
+                                                        alphabetCharactersReal_tPtr  *normalisedReference);
+
 extern graphicsError_t deleteCharacterExtantSegment(alphabetCharacters_tPtr alphabetCharacters,
                                                     lineSegment_tPtr        lineSegment);
 

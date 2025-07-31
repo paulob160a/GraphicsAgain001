@@ -32,14 +32,6 @@ using namespace Gdiplus;
 
 /******************************************************************************/
 
-graphicsError_t detectMouseOverObject(const guiObjectHoldingRing_tPtr  guiObjectHoldingRing,
-                                      const GRAPHICS_SHORT             xPosition,
-                                      const GRAPHICS_SHORT             yPosition,
-                                      const canvasDescriptor_t        *canvasSize,
-                                            bool                      *mouseOverObject);
-
-/******************************************************************************/
-
 // Global Variables:
 HINSTANCE                    hInst                          = nullptr;                  // current instance
 WCHAR                        appTitle[MAX_LOADSTRING]       = { GRAPHICS_AGAIN_TITLE }; // The title bar text
@@ -69,6 +61,13 @@ strokeGraphPointBase_t       strokeGraphPointBase                        = {
                                                                            STROKE_LINE_WIDTH
                                                                            };
 
+                                                         
+  GRAPHICS_CHAR                strokeTextHeadline[MAX_LOADSTRING]        = GRAPHICS_STROKE_TEXT_HEADLINE;
+                                                                         
+  strokeTextStringDescriptor_t strokeTextHeadlineCharacters              = {
+                                                                           &strokeTextHeadline[0]
+                                                                           };
+
 /******************************************************************************/
 
 // Forward declarations of functions included in this code module:
@@ -89,52 +88,65 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
 
-  GdiplusStartupInput       gdiPlusStartupInput       = { 0 };
-  ULONG_PTR                 gdiplusToken              = NULL;
-                                                      
-  __time32_t                theCurrentTime            = 0;
-                                                      
-  HACCEL                    hAccelTable               = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GRAPHICSAGAIN001));
-  MSG                       msg                       = { 0 };
-                                                      
-  RECT                      requiredWindowSize        = {
-                                                          GDI_PLUS_WINDOW_RECTANGLE_X_LEFT,
-                                                          GDI_PLUS_WINDOW_RECTANGLE_Y_TOP,
-                                                          GDI_PLUS_WINDOW_RECTANGLE_X_BOTTOM,
-                                                          GDI_PLUS_WINDOW_RECTANGLE_Y_BOTTOM
-                                                          };
-                                      
-  GRAPHICS_WCHAR_PTR       *commandLineList           = nullptr;
-  GRAPHICS_INT              commandLineArgumentNumber = ((GRAPHICS_INT)0),
-                            listIndex                 = ((GRAPHICS_INT)0);
-  GRAPHICS_WCHAR_PTR        commandLineArguments      = nullptr;
-  GRAPHICS_CHAR_PTR         ipAddress                 = nullptr,
-                            portNumber                = nullptr;
-                           
-  GRAPHICS_UINT             stringLength              = ((GRAPHICS_UINT)0),
-                            characterIndex            = ((GRAPHICS_UINT)0);
-                           
-  size_t                    commandStringLength       = ((size_t)0);
-  errno_t                   commandStringError        = NO_ERROR;
-  GRAPHICS_INT              commandStringIndex        = ((GRAPHICS_INT)0);
-                            
-  graphicsError_t           graphicsErrorState        = GRAPHICS_NO_ERROR;
-                           
-                           
-  singlePoint_t            characterFrameDimensions   = { 
-                                                        ((GRAPHICS_REAL)0.0),
-                                                        ((GRAPHICS_REAL)0.0) 
-                                                        };
-                                                     
-  strokeGraphPointBase_t   strokeGraphicBase          = {
-                                                         ((GRAPHICS_UINT)0),
-                                                         ((GRAPHICS_UINT)0),
-                                                         nullptr,
-                                                         BRIGHT_YELLOW_PEN,
-                                                         LIGHT_BLUE_PEN,
-                                                         RED_PEN,
-                                                         STROKE_LINE_WIDTH
-                                                         };
+  GdiplusStartupInput           gdiPlusStartupInput               = { 0 };
+  ULONG_PTR                     gdiplusToken                      = NULL;
+                                                                  
+  __time32_t                    theCurrentTime                    = 0;
+                                                                  
+  HACCEL                        hAccelTable                       = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GRAPHICSAGAIN001));
+  MSG                           msg                               = { 0 };
+                                                                  
+  RECT                          requiredWindowSize                = {
+                                                                    GDI_PLUS_WINDOW_RECTANGLE_X_LEFT,
+                                                                    GDI_PLUS_WINDOW_RECTANGLE_Y_TOP,
+                                                                    GDI_PLUS_WINDOW_RECTANGLE_X_BOTTOM,
+                                                                    GDI_PLUS_WINDOW_RECTANGLE_Y_BOTTOM
+                                                                    };
+                                                                  
+    RECT                        adjustedWindowSize                = {
+                                                                    ((LONG)0),
+                                                                    ((LONG)0),
+                                                                    ((LONG)0),
+                                                                    ((LONG)0)
+                                                                    },
+                                deltaWindowSize                   = {
+                                                                    ((LONG)0),
+                                                                    ((LONG)0),
+                                                                    ((LONG)0),
+                                                                    ((LONG)0)
+                                                                    };
+                                                              
+  GRAPHICS_WCHAR_PTR           *commandLineList                   = nullptr;
+  GRAPHICS_INT                  commandLineArgumentNumber         = ((GRAPHICS_INT)0),
+                                listIndex                         = ((GRAPHICS_INT)0);
+  GRAPHICS_WCHAR_PTR            commandLineArguments              = nullptr;
+  GRAPHICS_CHAR_PTR             ipAddress                         = nullptr,
+                                portNumber                        = nullptr;
+                                                                  
+  GRAPHICS_UINT                 stringLength                      = ((GRAPHICS_UINT)0),
+                                characterIndex                    = ((GRAPHICS_UINT)0);
+                                                                  
+  size_t                        commandStringLength               = ((size_t)0);
+  errno_t                       commandStringError                = NO_ERROR;
+  GRAPHICS_INT                  commandStringIndex                = ((GRAPHICS_INT)0);
+                                                                  
+  graphicsError_t               graphicsErrorState                = GRAPHICS_NO_ERROR;
+                                                                  
+                                                                  
+  singlePoint_t                characterFrameDimensions           = { 
+                                                                    ((GRAPHICS_REAL)0.0),
+                                                                    ((GRAPHICS_REAL)0.0) 
+                                                                    };
+
+  strokeGraphPointBase_t       strokeGraphicBase                  = {
+                                                                     ((GRAPHICS_UINT)0),
+                                                                     ((GRAPHICS_UINT)0),
+                                                                     nullptr,
+                                                                     BRIGHT_YELLOW_PEN,
+                                                                     LIGHT_BLUE_PEN,
+                                                                     RED_PEN,
+                                                                     STROKE_LINE_WIDTH
+                                                                     };
 
 /******************************************************************************/
 
@@ -335,6 +347,21 @@ extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
   LoadStringW(hInstance, IDC_GRAPHICSAGAIN001, appWindowClass, MAX_LOADSTRING);
 
   RegisterGraphicsClass(hInstance);
+
+  // Correct the frame to our requirements!
+  adjustedWindowSize = requiredWindowSize;
+
+  AdjustWindowRect(&requiredWindowSize, WS_CAPTION, GDI_PLUS_WINDOW_MENU_STATE);
+
+  deltaWindowSize.left   = adjustedWindowSize.left   - requiredWindowSize.left;
+  deltaWindowSize.right  = requiredWindowSize.right  - adjustedWindowSize.right;
+  deltaWindowSize.top    = adjustedWindowSize.top    - requiredWindowSize.top;
+  deltaWindowSize.bottom = requiredWindowSize.bottom - adjustedWindowSize.bottom;
+
+  requiredWindowSize.left   = deltaWindowSize.left   + adjustedWindowSize.left;
+  requiredWindowSize.right  = deltaWindowSize.right  + adjustedWindowSize.right;
+  requiredWindowSize.top    = deltaWindowSize.top    + adjustedWindowSize.top;
+  requiredWindowSize.bottom = deltaWindowSize.bottom + adjustedWindowSize.bottom;
 
   AdjustWindowRect(&requiredWindowSize, WS_CAPTION, GDI_PLUS_WINDOW_MENU_STATE);
 
@@ -610,10 +637,6 @@ VOID OnPaint(HDC                        hdc,
 
   lineSegment_tPtr nextLineSegment = nullptr;
 
-  //Pen            pen(Color(BLACK_PEN_OPAQUE));
-
-  //SolidBrush     solidBrush(Color(BLACK_PEN_OPAQUE));
-
   graphicsError_t  objectError     = GRAPHICS_NO_ERROR;
 
 /******************************************************************************/
@@ -661,6 +684,7 @@ VOID OnPaint(HDC                        hdc,
       }
 
     // TEST :
+#if (0)
     // - draw a character from the loaded alphabet file
     objectError = buildCharacterStrokeGraph(characterFrame,
                                             strokeGraphBase);
@@ -688,6 +712,32 @@ VOID OnPaint(HDC                        hdc,
       segmentIndex = segmentIndex + ((GRAPHICS_UINT)1);
       }
 
+
+    objectError = normaliseCharacterSegments( characterReference,
+                                             &normalisedReference);
+#else
+    {
+    GRAPHICS_UINT strokeCharacter = ((GRAPHICS_UINT)'g');
+
+#if (0)
+    objectError = drawStrokeCharacter(hdc,
+                                      (const GRAPHICS_UINT)strokeCharacter,
+                                      characterList,
+                                      (const strokeFrame_tPtr)characterFrame,
+                                      (const canvasDescriptor_tPtr)canvasSize,
+                                      (const strokeGraphPointBase_tPtr)strokeGraphBase);
+
+     strokeGraphBase->graphPoints = nullptr;
+#endif
+
+     objectError = drawStrokeText(hdc,
+                                  (const strokeTextStringDescriptor_tPtr)&strokeTextHeadlineCharacters,
+                                  characterList,
+                                  (const strokeFrame_tPtr)characterFrame,
+                                  (const canvasDescriptor_tPtr)canvasSize,
+                                  (const strokeGraphPointBase_tPtr)strokeGraphBase);
+    }
+#endif
     // TEST :
 
     // On the flag, test to see if the mouse is in the (composite) objects' detection boundary

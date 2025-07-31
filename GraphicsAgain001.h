@@ -392,22 +392,6 @@ typedef union commonObjectDimensions_tTag
   rectangleDimensions_t rectangularBoundary;
   octagonDimensions_t   octagonBoundary;
   hexagonDimensions_t   hexagonBoundary;
-  //GRAPHICS_REAL leftX;           // equivalent to a rectangle boundary structure
-  //GRAPHICS_REAL topY;            // equivalent to a rectangle boundary structure
-  //GRAPHICS_REAL rightX;          // equivalent to a rectangle boundary structure
-  //GRAPHICS_REAL bottomY;         // equivalent to a rectangle boundary structure
-  //GRAPHICS_REAL midLeftX;        // equivalent to octagon "mid" points between the "outer" x- and y- coordinates
-  //GRAPHICS_REAL midTopY;         // equivalent to octagon "mid" points between the "outer" x- and y- coordinates
-  //GRAPHICS_REAL midRightX;       // equivalent to octagon "mid" points between the "outer" x- and y- coordinates
-  //GRAPHICS_REAL midBottomY;      // equivalent to octagon "mid" points between the "outer" x- and y- coordinates
-  //GRAPHICS_REAL innerMidLeft;    // equivalent to hexagon "inner" and "outer" points between the "mid" "inner" x- and y- coordinates
-  //GRAPHICS_REAL innerMidTopY;    // equivalent to hexagon "inner" and "outer" points between the "mid" "inner" x- and y- coordinates
-  //GRAPHICS_REAL innerMidRightX;  // equivalent to hexagon "inner" and "outer" points between the "mid" "inner" x- and y- coordinates
-  //GRAPHICS_REAL innerMidBottomY; // equivalent to hexagon "inner" and "outer" points between the "mid" "inner" x- and y- coordinates
-  //GRAPHICS_REAL outerMidLeft;    // equivalent to hexagon "inner" and "outer" points between the "mid" "outer" x- and y- coordinates 
-  //GRAPHICS_REAL outerMidTopY;    // equivalent to hexagon "inner" and "outer" points between the "mid" "outer" x- and y- coordinates 
-  //GRAPHICS_REAL outerMidRightX;  // equivalent to hexagon "inner" and "outer" points between the "mid" "outer" x- and y- coordinates 
-  //GRAPHICS_REAL outerMidBottomY; // equivalent to hexagon "inner" and "outer" points between the "mid" "outer" x- and y- coordinates 
   } commonObjectDimensions_t, *commonObjectDimensions_tPtr;
 
 // Normalised canvas dimensions
@@ -663,11 +647,11 @@ extern graphicsError_t incrementallyTraverseHoldingRing(guiObjectHoldingRing_tPt
 
 extern bool            testHoldingRingObjectType(graphicsObjectType_t objectType);
 
-// extern graphicsError_t detectMouseOverObject(const guiObjectHoldingRing_tPtr  guiObjectHoldingRing,
-//                                              const GRAPHICS_SHORT             xPosition,
-//                                              const GRAPHICS_SHORT             yPosition,
-//                                              const canvasDescriptor_t        *canvasSize,
-//                                                    bool                      *mouseOverObject);
+extern graphicsError_t detectMouseOverObject(const guiObjectHoldingRing_tPtr  guiObjectHoldingRing,
+                                             const GRAPHICS_SHORT             xPosition,
+                                             const GRAPHICS_SHORT             yPosition,
+                                             const canvasDescriptor_t        *canvasSize,
+                                                   bool                      *mouseOverObject);
 
 extern graphicsError_t rectangleObjectOneHandler(GRAPHICS_VOID_PTR handlingMode);
 extern graphicsError_t rectangleObjectTwoHandler(GRAPHICS_VOID_PTR handlingMode);
@@ -687,6 +671,22 @@ extern graphicsError_t setCanvasCoordinates(canvasDescriptor_t *canvasSize,
 extern graphicsError_t buildCharacterStrokeGraph(strokeFrame_tPtr          characterFrame,
                                                  strokeGraphPointBase_tPtr strokeGraphBase);
 
+extern graphicsError_t deleteCharacterStrokeGraph(strokeGraphPointBase_tPtr  strokeGraphBase);
+
+extern graphicsError_t drawStrokeText(      HDC                             hdc,
+                                      const strokeTextStringDescriptor_tPtr strokeTextHeadlineCharacters,
+                                            alphabetCharacters_tPtr         characterList,
+                                      const strokeFrame_tPtr                characterFrame,
+                                      const canvasDescriptor_tPtr           canvasSize,
+                                      const strokeGraphPointBase_tPtr       strokeGraphBase);
+
+extern graphicsError_t drawStrokeCharacter(      HDC                          hdc,
+                                           const GRAPHICS_UINT                strokeCharacter,
+                                                 alphabetCharacters_tPtr      characterList,
+                                           const strokeFrame_tPtr             characterFrame,
+                                           const canvasDescriptor_tPtr        canvasSize,
+                                           const strokeGraphPointBase_tPtr    strokeGraphBase);
+
 extern VOID            OnPaint(HDC                        hdc,
                                canvasDescriptor_t        *canvasSize,
                                guiObjectHoldingRing_tPtr  guiObjectHoldingRingBaseLink,
@@ -695,7 +695,6 @@ extern VOID            OnPaint(HDC                        hdc,
                                GRAPHICS_SHORT_PTR         mouseXPosition,
                                GRAPHICS_SHORT_PTR         mouseYPosition,
                                strokeGraphPointBase_tPtr  strokeGraphBase);
-
 
 extern graphicsError_t drawLineSegment(      HDC                       hdc,
                                        const lineSegment_tPtr          newLineSegment,

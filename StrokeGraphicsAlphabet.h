@@ -233,6 +233,44 @@ typedef struct alphabetCharacters_tTag
   } alphabetCharacters_t, *alphabetCharacters_tPtr;
 #pragma pack(pop)
 
+// For line segment normalisation these structures are the 'REAL' counterparts 
+// of the original character definition
+#pragma pack(push,1)
+typedef struct lineSegmentReal_tTag
+  {
+  GRAPHICS_REAL         lineSegmentOriginX;
+  GRAPHICS_REAL         lineSegmentOriginY;
+  GRAPHICS_REAL         lineSegmentDestinationX;
+  GRAPHICS_REAL         lineSegmentDestinationY;
+  lineSegmentReal_tTag *nextLineSegment;
+  lineSegmentReal_tTag *lastLineSegment;
+  } lineSegmentReal_t, *lineSegmentReal_tPtr;
+#pragma pack(pop)
+
+#pragma pack(push,1)
+typedef struct alphabetCharactersReal_tTag
+  {
+  GRAPHICS_UINT             characterNumber;
+  alphabetCharacterState_t  characterState;
+  lineSegmentReal_tPtr      characterLineSegments;
+  characterExtents_t        characterExtents;
+  GRAPHICS_UINT             numberOfLineSegments;
+  GRAPHICS_INT              lineSegmentIndex;
+  alphabetCharacters_tTag  *nextCharacter;
+  alphabetCharacters_tTag  *lastCharacter;
+  } alphabetCharactersReal_t, *alphabetCharactersReal_tPtr;
+#pragma pack(pop)
+
+#pragma pack(push,1)
+typedef struct strokeTextStringDescriptor_tTag
+  {
+  GRAPHICS_CHAR_PTR strokeTextString;
+  singlePoint_t     strokeTextAnchor;                // referenced to { x == 0.0, y == 0.0 }
+  singlePoint_t     strokeTextCharacterDimension;    // x- and y-dimensions
+  singlePoint_t     strokeTextInterCharacterSpacing; // post-character space to right and "beneath"
+  } strokeTextStringDescriptor_t, *strokeTextStringDescriptor_tPtr;
+#pragma pack(pop)
+
 /******************************************************************************/
 
 extern alphabetCharacters_tPtr  characterListRoot;
@@ -243,10 +281,6 @@ extern GRAPHICS_WCHAR           alphabetFilePath[ALPHABET_FILEPATH_MAXIMUM];
 extern GRAPHICS_WCHAR           alphabetLineW[ALPHABET_NUMBER_LINE_LENGTH];
 
 /******************************************************************************/
-
-extern graphicsError_t writeAlphabetToFile(      alphabetFileDescriptor_tPtr alphabetFileDescriptor,
-                                           const alphabetCharacters_tPtr     characterListRoot,
-                                           const strokeGraphPointBase_tPtr   strokeGraphBase);
 
 extern graphicsError_t readAlphabetFromFile(const alphabetFileDescriptor_tPtr alphabetFileDescriptor,
                                                   alphabetCharacters_tPtr     characterListRoot,

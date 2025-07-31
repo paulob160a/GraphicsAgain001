@@ -17,6 +17,7 @@
 #include <malloc.h>
 #include <math.h>
 #include <string.h>
+#include "StrokeGraphicsListHandlers.h"
 #include "GraphicsAgainUtilities.h"
 #include "GraphicsAgainCaption.h"
 #include "GraphicsAgain001.h"
@@ -370,7 +371,7 @@ graphicsError_t setCanvasCoordinates(canvasDescriptor_t *canvasSize,
 
 graphicsError_t buildCharacterStrokeGraph(strokeFrame_tPtr          characterFrame,
                                           strokeGraphPointBase_tPtr strokeGraphBase)
-    {
+  {
 /******************************************************************************/
 
   GRAPHICS_UINT             graphicLineIndexX                   = ((GRAPHICS_UINT)0),
@@ -558,7 +559,197 @@ graphicsError_t buildCharacterStrokeGraph(strokeFrame_tPtr          characterFra
   return(objectError);
 
 /******************************************************************************/
-    } /* end of buildCharacterStrokeGraph                                     */
+  } /* end of buildCharacterStrokeGraph                                       */
+
+/******************************************************************************/
+/* deleteCharacterStrokeGraph() :                                             */
+/******************************************************************************/
+
+graphicsError_t deleteCharacterStrokeGraph(strokeGraphPointBase_tPtr strokeGraphBase)
+  {
+/******************************************************************************/
+
+  GRAPHICS_UINT             rowIndex    = ((GRAPHICS_UINT)0),
+                            columnIndex = ((GRAPHICS_UINT)0);
+
+  strokeGraphLinePoint_tPtr pointTrack  = nullptr,
+                            thisPoint   = nullptr;
+
+  graphicsError_t           objectError = GRAPHICS_NO_ERROR;
+
+/******************************************************************************/
+
+  if (strokeGraphBase != nullptr)
+    {
+    if ((strokeGraphBase->graphRowNumber != ((GRAPHICS_UINT)0)) && (strokeGraphBase->graphColumnNumber != ((GRAPHICS_UINT)0)))
+      {
+      pointTrack = strokeGraphBase->graphPoints;
+
+      for (rowIndex = ((GRAPHICS_UINT)0); rowIndex <= strokeGraphBase->graphRowNumber; rowIndex++)
+        {
+        for (columnIndex = ((GRAPHICS_UINT)0); columnIndex <= strokeGraphBase->graphColumnNumber ; columnIndex++)
+          {
+          if (pointTrack->nextStrokeGraphLine != nullptr)
+            {
+            thisPoint = pointTrack;
+            pointTrack = pointTrack->nextStrokeGraphLine;
+
+            delete(thisPoint);
+            }
+          }
+        }
+      }
+    else
+      {
+      //objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
+      }
+    }
+  else
+    {
+    objectError = GRAPHICS_OBJECT_PARAMETER_ERROR;
+    }
+
+/******************************************************************************/
+
+  return(objectError);
+
+/******************************************************************************/
+  } /* end of deleteCharacterStrokeGraph                                      */
+/******************************************************************************/
+/* drawStrokeCharacter() :                                                    */
+/******************************************************************************/
+
+graphicsError_t drawStrokeCharacter(       HDC                          hdc,
+                                     const GRAPHICS_UINT                strokeCharacter,
+                                           alphabetCharacters_tPtr      characterList,
+                                     const strokeFrame_tPtr             characterFrame,
+                                     const canvasDescriptor_tPtr        canvasSize,
+                                     const strokeGraphPointBase_tPtr    strokeGraphBase)
+  {
+/******************************************************************************/
+
+  Graphics         graphics(hdc);
+
+  GRAPHICS_UINT    segmentIndex    = ((GRAPHICS_UINT)0);
+  lineSegment_tPtr nextLineSegment = nullptr;
+
+  graphicsError_t  objectError     = GRAPHICS_NO_ERROR;
+
+/******************************************************************************/
+
+    objectError = buildCharacterStrokeGraph(characterFrame,
+                                            strokeGraphBase);
+
+    objectError = fetchCharacterReference( strokeCharacter,
+                                           characterList,
+                                          &characterReference);
+
+    // One-by-one, point at the already extant line segments
+    while ((objectError = fetchCharacterExtantSegment( segmentIndex,
+                                                       characterReference,
+                                                      &nextLineSegment)) == GRAPHICS_NO_ERROR)
+      {
+      // "strokeGraphBase" may be the key to compressing the character...
+      strokeGraphBase->graphRowNumber    = 1024;
+      strokeGraphBase->graphColumnNumber = 1025;
+
+      objectError = drawLineSegment(hdc,
+                                    nextLineSegment,
+                                    LINE_SEGMENT_MODE_PASSIVE,
+                                    (const strokeFrame_tPtr)characterFrame,
+                                    (const canvasDescriptor_tPtr)canvasSize,
+                                    (const strokeGraphPointBase_tPtr)strokeGraphBase);
+
+      segmentIndex = segmentIndex + ((GRAPHICS_UINT)1);
+      }
+
+/******************************************************************************/
+
+  return(objectError);
+
+/******************************************************************************/
+  } /* end of drawStrokeCharacter                                             */
+
+/******************************************************************************/
+/* drawStrokeText() :                                                         */
+/******************************************************************************/
+
+graphicsError_t drawStrokeText(      HDC                             hdc,
+                               const strokeTextStringDescriptor_tPtr strokeTextHeadlineCharacters,
+                                     alphabetCharacters_tPtr         characterList,
+                               const strokeFrame_tPtr                characterFrame,
+                               const canvasDescriptor_tPtr           canvasSize,
+                               const strokeGraphPointBase_tPtr       strokeGraphBase)
+  {
+/******************************************************************************/
+
+  GRAPHICS_UINT               strokeCharacter          = ((GRAPHICS_UINT)0),
+                              strokeCharacterIndex     = ((GRAPHICS_UINT)0);
+                                                       
+  size_t                      strokeStringSize         = ((size_t)0);
+
+  alphabetCharacters_tPtr     strokeCharacterReference = nullptr;
+
+  alphabetCharactersReal_tPtr normalisedReference      = nullptr;
+                                                      
+  graphicsError_t             objectError              = GRAPHICS_NO_ERROR;
+
+/******************************************************************************/
+
+  if ((strokeTextHeadlineCharacters != nullptr) && (characterList                != nullptr) &&
+      (characterFrame               != nullptr) && (canvasSize                   != nullptr) &&
+      (strokeGraphBase              != nullptr) && (strokeGraphBase->graphPoints == nullptr))
+    {
+    if ((strokeStringSize = strlen(strokeTextHeadlineCharacters->strokeTextString)) != ((size_t)0))
+      {
+      if (buildCharacterStrokeGraph(characterFrame,
+                                    strokeGraphBase) == GRAPHICS_NO_ERROR)
+        {
+        for (strokeCharacterIndex = ((GRAPHICS_UINT)0); strokeCharacterIndex < strokeStringSize; strokeCharacterIndex++)
+          {
+          strokeCharacter = strokeTextHeadlineCharacters->strokeTextString[strokeCharacterIndex];
+
+          objectError = fetchCharacterReference( strokeCharacter,
+                                                 characterList,
+                                                &strokeCharacterReference);
+          
+          objectError = normaliseCharacterSegments( strokeCharacterReference,
+                                                   &normalisedReference);
+
+          /*objectError = drawStrokeCharacter(hdc,
+                                            (const GRAPHICS_UINT)strokeCharacter,
+                                            characterList,
+                                            (const strokeFrame_tPtr)characterFrame,
+                                            (const canvasDescriptor_tPtr)canvasSize,
+                                            (const strokeGraphPointBase_tPtr)strokeGraphBase);*/
+          }
+        }
+
+      // Clear out all the allocated ponit structures
+      deleteCharacterStrokeGraph(strokeGraphBase);
+
+      // Clean "strokeGraphBase"
+      strokeGraphBase->graphRowNumber    = ((GRAPHICS_UINT)0);
+      strokeGraphBase->graphColumnNumber = ((GRAPHICS_UINT)0);
+      strokeGraphBase->lineWidth         = ((GRAPHICS_REAL)0.0);
+      strokeGraphBase->graphPoints       = nullptr;
+      }          
+    else
+      {
+      objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
+      }
+    }
+  else
+    {
+    objectError = GRAPHICS_OBJECT_PARAMETER_ERROR;
+    }
+
+/******************************************************************************/
+
+  return(objectError);
+
+/******************************************************************************/
+  } /* end of drawStrokeText                                                  */
 
 /******************************************************************************/
 /* drawLineSegment() :                                                        */
@@ -589,7 +780,7 @@ graphicsError_t drawLineSegment(      HDC                       hdc,
 
 /******************************************************************************/
 
-  if ((newLineSegment != nullptr) && (canvasSize != nullptr) && (strokeGraphPoints != nullptr))
+  if ((newLineSegment != nullptr) && (canvasSize != nullptr) && (characterFrame != nullptr) && (strokeGraphPoints != nullptr))
     {
     // The grid has a normalised page-plotting range that is added to each point coordinate
     xAxisPointDelta = (characterFrame->frameCoordinates.frameRightX  - characterFrame->frameCoordinates.frameLeftX) / ((GRAPHICS_REAL)strokeGraphPoints->graphRowNumber);
@@ -1224,9 +1415,6 @@ graphicsError_t guiPrintStaticText(HDC                 hdc,
 /******************************************************************************/
   } /* end of guiPrintStaticText                                              */
 
-
-
-
 /******************************************************************************/
 /* guiDrawRectangle() :                                                       */
 /******************************************************************************/
@@ -1273,8 +1461,8 @@ graphicsError_t guiDrawRectangle(HDC                 hdc,
       rightXo  = (GRAPHICS_FLOAT)(((rectangleObject_tPtr)(graphicsObject))->rectangleDimensions.rightX);
       bottomYo = (GRAPHICS_FLOAT)(((rectangleObject_tPtr)(graphicsObject))->rectangleDimensions.bottomY);
     
-      deltaX  = ((GRAPHICS_FLOAT)(canvasSize->right))  - ((GRAPHICS_FLOAT)(canvasSize->left));
-      deltaY  = ((GRAPHICS_FLOAT)(canvasSize->bottom)) - ((GRAPHICS_FLOAT)(canvasSize->top));
+      deltaX   = ((GRAPHICS_FLOAT)(canvasSize->right))  - ((GRAPHICS_FLOAT)(canvasSize->left));
+      deltaY   = ((GRAPHICS_FLOAT)(canvasSize->bottom)) - ((GRAPHICS_FLOAT)(canvasSize->top));
     
       // Draw a set of nested rectangles to build the requested linewidth
       for (lineWidthIndex = ((GRAPHICS_UINT)0); lineWidthIndex < (GRAPHICS_UINT)(((rectangleObject_tPtr)(graphicsObject))->rectangleDimensions.lineWidth); lineWidthIndex++)

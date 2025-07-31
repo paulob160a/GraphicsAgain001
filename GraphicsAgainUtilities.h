@@ -40,7 +40,8 @@ typedef enum lineSegmentMode_tTag
   } lineSegmentMode_t, *lineSegmentMode_tPtr;
 
 #define CURSOR_LINE_WIDTH   ((GRAPHICS_REAL)3)
-#define STROKE_LINE_WIDTH   ((GRAPHICS_REAL)5)
+// #define STROKE_LINE_WIDTH   ((GRAPHICS_REAL)5)
+#define STROKE_LINE_WIDTH   ((GRAPHICS_REAL)2)
 
 #pragma pack(push,1)
 typedef struct strokeFrameCoordinates_tTag
