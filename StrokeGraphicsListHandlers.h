@@ -15,6 +15,7 @@
 /******************************************************************************/
 
 #include "StrokeGraphicsTypes.h"
+#include "GraphicsAgain001.h"
 #include "StrokeGraphicsAlphabet.h"
 
 /******************************************************************************/
@@ -34,8 +35,18 @@ extern graphicsError_t fetchCharacterExtantSegment(const GRAPHICS_INT           
                                                    const alphabetCharacters_tPtr  alphabetCharacterReference,
                                                          lineSegment_tPtr        *newLineSegment);
 
-extern graphicsError_t normaliseCharacterSegments(const alphabetCharacters_tPtr      characterReference,
-                                                        alphabetCharactersReal_tPtr  *normalisedReference);
+extern graphicsError_t cloneAndNormaliseCharacterSegments(const alphabetCharacters_tPtr      characterReference,
+                                                                alphabetCharactersReal_tPtr  *normalisedReference);
+
+extern graphicsError_t drawNormalisedStrokeCharacter(      HDC                             hdc,
+                                                     const strokeTextStringDescriptor_tPtr strokeTextStringCharacters,
+                                                     const alphabetCharactersReal_tPtr     normalisedReference,
+                                                           strokeCharacterTrack_tPtr       characterTrack,
+                                                     const canvasDescriptor_tPtr           canvasSize,
+                                                     const objectColour_tPtr               strokeTextStringColour,
+                                                     const strokeGraphPointBase_tPtr       strokeGraphBase);
+
+extern graphicsError_t deleteCharacter(alphabetCharacters_tPtr selectedCharacter);
 
 extern graphicsError_t deleteCharacterExtantSegment(alphabetCharacters_tPtr alphabetCharacters,
                                                     lineSegment_tPtr        lineSegment);

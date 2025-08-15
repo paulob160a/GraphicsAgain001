@@ -58,15 +58,12 @@ strokeGraphPointBase_t       strokeGraphPointBase                        = {
                                                                            BRIGHT_YELLOW_PEN,
                                                                            LIGHT_BLUE_PEN,
                                                                            RED_PEN,
-                                                                           STROKE_LINE_WIDTH
+                                                                           STROKE_LINE_WIDTH,
+                                                                           DESCENT_ROW_PROPORTION
                                                                            };
 
                                                          
-  GRAPHICS_CHAR                strokeTextHeadline[MAX_LOADSTRING]        = GRAPHICS_STROKE_TEXT_HEADLINE;
-                                                                         
-  strokeTextStringDescriptor_t strokeTextHeadlineCharacters              = {
-                                                                           &strokeTextHeadline[0]
-                                                                           };
+  GRAPHICS_WCHAR             strokeTextHeadline[MAX_LOADSTRING]          = GRAPHICS_STROKE_TEXT_HEADLINE;
 
 /******************************************************************************/
 
@@ -145,7 +142,8 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
                                                                      BRIGHT_YELLOW_PEN,
                                                                      LIGHT_BLUE_PEN,
                                                                      RED_PEN,
-                                                                     STROKE_LINE_WIDTH
+                                                                     STROKE_LINE_WIDTH,
+                                                                     DESCENT_ROW_PROPORTION
                                                                      };
 
 /******************************************************************************/
@@ -229,6 +227,12 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
     MessageBoxW(NULL, COMMAND_LINE_ERROR_STATEMENT, COMMAND_LINE_ERROR_CAPTION, COMMAND_LINE_ERROR_BEHAVIOUR);
     exit(0);
     }
+  else
+    {
+    // Use the character frame dimensions returned from the file
+    characterFrame.strokeXAxisPoints = (GRAPHICS_UINT)characterFrameDimensions.xAxisPoint;
+    characterFrame.strokeYAxisPoints = (GRAPHICS_UINT)characterFrameDimensions.yAxisPoint;
+    }
 
   // Compute the character extents i.e. the invisible enclosing 'box'. To "print" stroke graphics text in 
   // this application the reference point will be the point : { x == 0, y == 0 }. Alphabets are generated 
@@ -241,8 +245,8 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
   // Thus, at loading the alphabet stroke extents are referenced to { 0, 0 } and not the grid-size used 
   // at generation
 
-  strokeGraphicBase.graphRowNumber    = ((GRAPHICS_UINT)0);
-  strokeGraphicBase.graphColumnNumber = ((GRAPHICS_UINT)0);
+  strokeGraphicBase.graphRowNumber    = (GRAPHICS_UINT)characterFrame.strokeXAxisPoints;
+  strokeGraphicBase.graphColumnNumber = (GRAPHICS_UINT)characterFrame.strokeYAxisPoints;
 
   for (characterIndex = ALPHABET_SIZE_START; characterIndex < ALPHABET_SIZE; characterIndex++)
     {
@@ -289,9 +293,7 @@ extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
 #pragma pack(pop) */
 
   graphicsErrorState = instantiateStaticTextObject(&rectangleOneText,
-                                                   (const GRAPHICS_WCHAR_PTR)    GRAPHICS_RECTANGLE_ONE_TEXT,
-                                                   (const rectangleDimensions_t) rectangleOneTextDimensions,
-                                                   (const objectColour_t)        rectangleOneTextColour);
+                                                   (const strokeTextStringDescriptor_tPtr)&headlineString);
 
 
   // Add the text object to the first rectangle object
@@ -301,16 +303,20 @@ extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
   // Add this to the first holding ring object element
   guiObjectHoldingRingFreePtr = guiObjectHoldingRingBaseLink;
 
-  graphicsErrorState = addGuiObjectToHoldingRing(guiObjectHoldingRingFreePtr,
-                                                 (GRAPHICS_VOID_PTR)rectangleObjectOne,
+  graphicsErrorState = addGuiObjectToHoldingRing( guiObjectHoldingRingFreePtr,
+                                                  (GRAPHICS_VOID_PTR)rectangleObjectOne,
                                                  &rectangleObjectOneActiveBehaviour,
-                                                 GRAPHICS_OBJECT_TYPE_RECTANGLE);
+                                                  GRAPHICS_OBJECT_TYPE_RECTANGLE);
+
+  graphicsErrorState = computeCompositeObjectBoundary(                                guiObjectHoldingRingFreePtr,
+                                                      (const alphabetCharacters_tPtr) characterListRoot,
+                                                      (const canvasDescriptor_tPtr)  &canvasSize);
 
   guiObjectHoldingRingCurrent = guiObjectHoldingRingBaseLink;
 
   graphicsErrorState = instantiateRectangleObject(&rectangleObjectTwo,
-                                                  (const rectangleDimensions_t)rectangleObjectTwoDimensions,
-                                                  (const objectColour_t)rectangleObjectTwoColour); 
+                                                   (const rectangleDimensions_t)rectangleObjectTwoDimensions,
+                                                   (const objectColour_t)rectangleObjectTwoColour); 
 
   // DEVELOPMENT_START
   graphicsErrorState = instantiateRectangleObject(&rectangleObjectThree,
@@ -332,9 +338,19 @@ extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
                                                  &rectangleObjectTwoActiveBehaviour,
                                                  GRAPHICS_OBJECT_TYPE_RECTANGLE);
 
-  graphicsErrorState = computeCompositeObjectBoundary(guiObjectHoldingRingCurrent);
+  graphicsErrorState = computeCompositeObjectBoundary(                                guiObjectHoldingRingCurrent,
+                                                      (const alphabetCharacters_tPtr) characterListRoot,
+                                                      (const canvasDescriptor_tPtr)  &canvasSize);
 
-  graphicsErrorState = printHoldingRingObject(guiObjectHoldingRingBaseLink);
+#if (0)
+  graphicsErrorState = traverseHoldingRingObject( guiObjectHoldingRingBaseLink);
+#else
+#if (0)
+  graphicsErrorState = printHoldingRingObject( guiObjectHoldingRingBaseLink,
+                                              &objectOutput[0],
+                                              &captionPanel[0]);
+#endif
+#endif
 
 /******************************************************************************/
 
@@ -353,15 +369,15 @@ extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
 
   AdjustWindowRect(&requiredWindowSize, WS_CAPTION, GDI_PLUS_WINDOW_MENU_STATE);
 
-  deltaWindowSize.left   = adjustedWindowSize.left   - requiredWindowSize.left;
-  deltaWindowSize.right  = requiredWindowSize.right  - adjustedWindowSize.right;
-  deltaWindowSize.top    = adjustedWindowSize.top    - requiredWindowSize.top;
-  deltaWindowSize.bottom = requiredWindowSize.bottom - adjustedWindowSize.bottom;
+  deltaWindowSize.left      = adjustedWindowSize.left   - requiredWindowSize.left;
+  deltaWindowSize.right     = requiredWindowSize.right  - adjustedWindowSize.right;
+  deltaWindowSize.top       = adjustedWindowSize.top    - requiredWindowSize.top;
+  deltaWindowSize.bottom    = requiredWindowSize.bottom - adjustedWindowSize.bottom;
 
-  requiredWindowSize.left   = deltaWindowSize.left   + adjustedWindowSize.left;
-  requiredWindowSize.right  = deltaWindowSize.right  + adjustedWindowSize.right;
-  requiredWindowSize.top    = deltaWindowSize.top    + adjustedWindowSize.top;
-  requiredWindowSize.bottom = deltaWindowSize.bottom + adjustedWindowSize.bottom;
+  requiredWindowSize.left   = deltaWindowSize.left      + adjustedWindowSize.left;
+  requiredWindowSize.right  = deltaWindowSize.right     + adjustedWindowSize.right;
+  requiredWindowSize.top    = deltaWindowSize.top       + adjustedWindowSize.top;
+  requiredWindowSize.bottom = deltaWindowSize.bottom    + adjustedWindowSize.bottom;
 
   AdjustWindowRect(&requiredWindowSize, WS_CAPTION, GDI_PLUS_WINDOW_MENU_STATE);
 
@@ -395,7 +411,6 @@ extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
   } /* end of WinMain                                                         */
 
 /******************************************************************************/
-/*                                                                            */
 /* RegisterGraphicsClass() :                                                  */
 /*                                                                            */
 /*  - registers the window class.                                             */
@@ -431,7 +446,6 @@ ATOM RegisterGraphicsClass(HINSTANCE hInstance)
   } /* end of RegisterGraphicsClass                                           */
 
 /******************************************************************************/
-/*                                                                            */
 /* InitInstance(HINSTANCE, RECT *, int) :                                     */
 /*                                                                            */ 
 /* - saves the instance handle and creates the main window                    */
@@ -475,7 +489,6 @@ BOOL InitInstance(HINSTANCE hInstance, RECT *requiredWindowSize, int nCmdShow)
   } /* end of InitInstance                                                    */
 
 /******************************************************************************/
-/*                                                                            */
 /* WndProc(HWND, UINT, WPARAM, LPARAM) :                                      */
 /* - processes messages for the main window.                                  */
 //                                                                            */
@@ -548,16 +561,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                           break;
         } */
 
-      break;
-
       case WM_KEYDOWN : switch(wParam)
-        {
-        case KEY_ESC_EXIT :
-          PostMessage(hWnd, WM_CLOSE, 0, 0);
-          [[fallthrough]]; // warning C26819 fallthrough is explicit
-        default : 
-                  break;
-        };
+                          {
+                          case KEY_ESC_EXIT : PostMessage(hWnd, WM_CLOSE, 0, 0);
+                                              return(0);
+                                              [[fallthrough]]; // warning C26819 fallthrough is explicit
+                        
+                          default           : 
+                                              break;
+                          };
 
       InvalidateRect(hWnd, NULL, TRUE);
 
@@ -579,6 +591,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hdc     = BeginPaint(hWnd, &ps);   // the ultimate destination for the new image
         swapHdc = CreateCompatibleDC(hdc); // the hidden drawing plane for the new image
 
+        // Create a "window" bitmap for 'hdc' and a "source" bitmap for 'swapHdc'
+        HBITMAP hbmMem = CreateCompatibleBitmap(hdc, (INT)canvasSize.width, (INT)canvasSize.height);
+
+        HBITMAP hbmOld = (HBITMAP)SelectObject(swapHdc, hbmMem);
+
         OnPaint( hdc,
                 &canvasSize,
                  guiObjectHoldingRingBaseLink,
@@ -588,6 +605,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 &mouseYPosition,
                 &strokeGraphPointBase);
 
+        if (!StretchBlt(hdc,
+                        ((INT)0), // canvasSize.left,
+                        ((INT)0), // canvasSize.top,
+                        (INT)canvasSize.width,
+                        (INT)canvasSize.height,
+                        swapHdc,
+                        ((INT)localCanvasSize.left), // localCanvasSize.left,
+                        ((INT)localCanvasSize.top),  // localCanvasSize.top,
+                        (INT)localCanvasSize.width,
+                        (INT)localCanvasSize.height,
+                        SRCCOPY))
+          {
+          while(true)
+            ;
+          }
+
+        SelectObject(swapHdc, hbmOld);
         DeleteDC(swapHdc);
         DeleteDC(hdc);
 
@@ -598,11 +632,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
       case WM_CLOSE:
         DestroyWindow(hWnd);
         return(0);
+      break;
 
       case WM_DESTROY:
         PostQuitMessage(0);
         return(0);
-      break;
 
       default:
         return(DefWindowProc(hWnd, message, wParam, lParam));
@@ -637,6 +671,8 @@ VOID OnPaint(HDC                        hdc,
 
   lineSegment_tPtr nextLineSegment = nullptr;
 
+  SolidBrush       backgroundPen(Color(FRAME_BACKGROUND_COLOUR_A, FRAME_BACKGROUND_COLOUR_RED, FRAME_BACKGROUND_COLOUR_GREEN, FRAME_BACKGROUND_COLOUR_BLUE));
+
   graphicsError_t  objectError     = GRAPHICS_NO_ERROR;
 
 /******************************************************************************/
@@ -645,6 +681,13 @@ VOID OnPaint(HDC                        hdc,
                             objectHoldingRingNextIndex    = nullptr;
 
 /******************************************************************************/
+
+  RectF frameF(((GRAPHICS_FLOAT)0.0), //canvasSize->left),
+               ((GRAPHICS_FLOAT)0.0), //canvasSize->top),
+               ((GRAPHICS_FLOAT)(canvasSize->right - canvasSize->left)),
+               ((GRAPHICS_FLOAT)canvasSize->bottom));
+
+  graphics.FillRectangle(&backgroundPen, frameF);
 
   // Traverse the object holding ring : '...CurrentIndex' and '...NextIndex' 
   // swap each iteration so the current element is always '...CureentIndex' and 
@@ -668,9 +711,12 @@ VOID OnPaint(HDC                        hdc,
                                                                                  canvasSize);
                                                   break;
         
-          case GRAPHICS_OBJECT_TYPE_STATIC_TEXT : objectError = guiPrintStaticText(hdc,
-                                                                                   guiObject,
-                                                                                   canvasSize);
+          case GRAPHICS_OBJECT_TYPE_STATIC_TEXT : objectError = drawStrokeText(hdc,
+                                                                               (const strokeTextStringDescriptor_tPtr)&headlineString,
+                                                                               characterList,
+                                                                               (const strokeFrame_tPtr)characterFrame,
+                                                                               (const canvasDescriptor_tPtr)canvasSize,
+                                                                               (const strokeGraphPointBase_tPtr)strokeGraphBase);
                                                   break;
 
           case GRAPHICS_OBJECT_TYPE_NONE        : // currently "do nothing" for deviant cases - TBC!
@@ -717,8 +763,6 @@ VOID OnPaint(HDC                        hdc,
                                              &normalisedReference);
 #else
     {
-    GRAPHICS_UINT strokeCharacter = ((GRAPHICS_UINT)'g');
-
 #if (0)
     objectError = drawStrokeCharacter(hdc,
                                       (const GRAPHICS_UINT)strokeCharacter,
@@ -729,13 +773,6 @@ VOID OnPaint(HDC                        hdc,
 
      strokeGraphBase->graphPoints = nullptr;
 #endif
-
-     objectError = drawStrokeText(hdc,
-                                  (const strokeTextStringDescriptor_tPtr)&strokeTextHeadlineCharacters,
-                                  characterList,
-                                  (const strokeFrame_tPtr)characterFrame,
-                                  (const canvasDescriptor_tPtr)canvasSize,
-                                  (const strokeGraphPointBase_tPtr)strokeGraphBase);
     }
 #endif
     // TEST :

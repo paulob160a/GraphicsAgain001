@@ -14,6 +14,10 @@
 
 /******************************************************************************/
 
+#include <stdint.h>
+
+/******************************************************************************/
+
 typedef          void         GRAPHICS_VOID,     *GRAPHICS_VOID_PTR;
 typedef          bool         GRAPHICS_BOOLEAN,  *GRAPHICS_BOOLEAN_PTR;
 typedef          char         GRAPHICS_CHAR,     *GRAPHICS_CHAR_PTR;
@@ -24,7 +28,9 @@ typedef          short        GRAPHICS_SHORT,    *GRAPHICS_SHORT_PTR;
 typedef unsigned short        GRAPHICS_USHORT,   *GRAPHICS_USHORT_PTR;
 typedef          int          GRAPHICS_INT,      *GRAPHICS_INT_PTR;
 typedef unsigned int          GRAPHICS_UINT,     *GRAPHICS_UINT_PTR;
-typedef wint_t                GRAPHICS_WIDE_INT, *GRAPHICS_WIDE_INT_PTR;
+typedef          int64_t      GRAPHICS_INT64,    *GRAPHICS_INT64_PTR;
+typedef          uint64_t     GRAPHICS_UINT64,   *GRAPHICS_UINT64_PTR;
+typedef          wint_t       GRAPHICS_WIDE_INT, *GRAPHICS_WIDE_INT_PTR;
 typedef          long         GRAPHICS_LONG,     *GRAPHICS_LONG_PTR;
 typedef unsigned long         GRAPHICS_ULONG,    *GRAPHICS_ULONG_PTR;
 typedef          float        GRAPHICS_FLOAT,    *GRAPHICS_FLOAT_PTR;

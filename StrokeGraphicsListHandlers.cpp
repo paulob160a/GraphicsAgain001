@@ -225,7 +225,7 @@ graphicsError_t fetchCharacterReference(const GRAPHICS_UINT            character
 
 graphicsError_t fetchCharacterExtantSegment(const GRAPHICS_INT             segmentNumber,
                                             const alphabetCharacters_tPtr  alphabetCharacterReference,
-                                                  lineSegment_tPtr        *newLineSegment)
+                                                  lineSegment_tPtr         *newLineSegment)
   {
 /******************************************************************************/
 
@@ -287,12 +287,12 @@ graphicsError_t fetchCharacterExtantSegment(const GRAPHICS_INT             segme
   } /* fetchCharacterExtantSegment                                            */
 
 /******************************************************************************/
-/* normaliseCharacterSegments() :                                             */
+/* cloneAndNormaliseCharacterSegments() :                                     */
 /* - converts a characters' line segments to normalised 'REAL' numbers        */
 /******************************************************************************/
 
-graphicsError_t normaliseCharacterSegments(const alphabetCharacters_tPtr      characterReference,
-                                                 alphabetCharactersReal_tPtr *normalisedReference)
+graphicsError_t cloneAndNormaliseCharacterSegments(const alphabetCharacters_tPtr      characterReference,
+                                                         alphabetCharactersReal_tPtr *normalisedReference)
   {
 /******************************************************************************/
 
@@ -303,7 +303,7 @@ graphicsError_t normaliseCharacterSegments(const alphabetCharacters_tPtr      ch
                        newSegmentReference = nullptr,
                        nullSegment         = nullptr;
 
-  GRAPHICS_INT         extentLeftX         = ((GRAPHICS_INT)0),
+  GRAPHICS_INT64       extentLeftX         = ((GRAPHICS_INT)0),
                        extentTopY          = ((GRAPHICS_INT)0),
                        extentRightX        = ((GRAPHICS_INT)0),
                        extentBottomY       = ((GRAPHICS_INT)0);
@@ -355,10 +355,17 @@ graphicsError_t normaliseCharacterSegments(const alphabetCharacters_tPtr      ch
         {
         // Make a partial "deep" copy of the character definition
         (*normalisedReference)->characterNumber      = characterReference->characterNumber;
-        (*normalisedReference)->characterExtents     = characterReference->characterExtents;
-        (*normalisedReference)->lineSegmentIndex     = ((GRAPHICS_INT)0);
 
-        // Create an empty segment to terminate the lsit
+        // Character extents are generated as signed 32-bit numbers but loaded as signed 64-bit numbers. Hence 
+        // the signage gets lost! The serial casts should recover negative numbers
+        (*normalisedReference)->characterExtents.topLeft.pointX     = (GRAPHICS_INT64)((GRAPHICS_INT)characterReference->characterExtents.topLeft.pointX);
+        (*normalisedReference)->characterExtents.topLeft.pointY     = (GRAPHICS_INT64)((GRAPHICS_INT)characterReference->characterExtents.topLeft.pointY);
+        (*normalisedReference)->characterExtents.bottomRight.pointX = (GRAPHICS_INT64)((GRAPHICS_INT)characterReference->characterExtents.bottomRight.pointX);
+        (*normalisedReference)->characterExtents.bottomRight.pointY = (GRAPHICS_INT64)((GRAPHICS_INT)characterReference->characterExtents.bottomRight.pointY);
+
+        (*normalisedReference)->lineSegmentIndex                    = ((GRAPHICS_INT)0);
+
+        // Create an empty segment to terminate the list
         if ((nullSegment = (lineSegmentReal_tPtr)calloc(((size_t)1), ((size_t)sizeof(lineSegmentReal_t)))) != nullptr)
           {
           // Recreate and normalise the segments
@@ -419,7 +426,22 @@ graphicsError_t normaliseCharacterSegments(const alphabetCharacters_tPtr      ch
       }
     else
       {
-      objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
+      if (characterReference->characterNumber == ALPHABET_ASCII_SPACE) 
+        {
+        // Creatre a very sparse "normalisedReference"
+        if ((*normalisedReference = (alphabetCharactersReal_tPtr)calloc(((size_t)1), ((size_t)sizeof(alphabetCharactersReal_t)))) != nullptr)
+          {
+          (*normalisedReference)->characterNumber = ALPHABET_ASCII_SPACE;
+          }
+        else
+          {
+          objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
+          }
+        }
+      else
+        {
+        objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
+        }
       }
     }
   else
@@ -432,7 +454,165 @@ graphicsError_t normaliseCharacterSegments(const alphabetCharacters_tPtr      ch
   return(objectError);
 
 /******************************************************************************/
-  } /* end of normaliseCharacterSegments                                      */
+  } /* end of cloneAndNormaliseCharacterSegments                              */
+
+/******************************************************************************/
+/* drawNormalisedStrokeCharacter() :                                          */
+/******************************************************************************/
+
+graphicsError_t drawNormalisedStrokeCharacter(      HDC                             hdc,
+                                              const strokeTextStringDescriptor_tPtr strokeTextStringCharacters,
+                                              const alphabetCharactersReal_tPtr     normalisedReference,
+                                                    strokeCharacterTrack_tPtr       characterTrack,
+                                              const canvasDescriptor_tPtr           canvasSize,
+                                              const objectColour_tPtr               strokeTextStringColour,
+                                              const strokeGraphPointBase_tPtr       strokeGraphBase)
+  {
+/******************************************************************************/
+
+  Graphics             graphics(hdc);
+
+  GRAPHICS_REAL        deltaX                   = ((GRAPHICS_REAL)0.0),
+                       deltaY                   = ((GRAPHICS_REAL)0.0);
+                                                
+  GRAPHICS_REAL        extentTopX               = ((GRAPHICS_REAL)0.0),
+                       extentTopY               = ((GRAPHICS_REAL)0.0),
+                       extentBottomX            = ((GRAPHICS_REAL)0.0),
+                       extentBottomY            = ((GRAPHICS_REAL)0.0),
+                       extentRangeX             = ((GRAPHICS_REAL)0.0),
+                       extentRangeY             = ((GRAPHICS_REAL)0.0);
+                                                
+  GRAPHICS_REAL        characterResizeX         = ((GRAPHICS_REAL)0.0), // resize the character using the requested width and 
+                       characterResizeY         = ((GRAPHICS_REAL)0.0), // depth as modifiers to the extents
+                       characterTextWidth       = ((GRAPHICS_REAL)0.0),
+                       characterDescenderOffset = ((GRAPHICS_REAL)0.0); // move the character 'y' coordinates down to account
+                                                                        // for descenders, based on the priginal 'row' and
+                                                                        // column values used in "StrokeGraphics"
+
+  GRAPHICS_FLOAT       endPointX                = ((GRAPHICS_FLOAT)0.0),
+                       endPointY                = ((GRAPHICS_FLOAT)0.0),
+                       startPointX              = ((GRAPHICS_FLOAT)0.0),
+                       startPointY              = ((GRAPHICS_FLOAT)0.0);
+                                                
+  lineSegmentReal_tPtr segmentTrack             = nullptr;
+                                                
+  graphicsError_t      objectError              = GRAPHICS_NO_ERROR;
+
+/******************************************************************************/
+
+  if ((strokeTextStringCharacters  != nullptr)   && (normalisedReference != nullptr) && 
+      (characterTrack              != nullptr)   && (canvasSize          != nullptr) &&
+      (strokeTextStringColour      != nullptr))
+    {
+    if (normalisedReference->numberOfLineSegments != ((GRAPHICS_UINT)0))
+      {
+      // Select the text colour
+      Pen pen(Color((BYTE)strokeTextStringColour->opacity,
+                    (BYTE)strokeTextStringColour->red,
+                    (BYTE)strokeTextStringColour->green,
+                    (BYTE)strokeTextStringColour->blue));
+      
+      pen.SetWidth((REAL)strokeTextStringCharacters->strokeLineWidth);
+      
+      pen.SetStartCap(LineCapRound);
+      pen.SetEndCap(LineCapRound);
+      
+      // Compress or expand the character dimensions if they are greater/lesser than the allocated space
+      deltaX           = ((GRAPHICS_REAL)(canvasSize->right))  - ((GRAPHICS_FLOAT)(canvasSize->left));
+      deltaY           = ((GRAPHICS_REAL)(canvasSize->bottom)) - ((GRAPHICS_FLOAT)(canvasSize->top));
+      
+      // At this point the character extent values are still related to the number of rows and columns 
+      // used in their original definition in "StrokeGraphics"...
+      extentTopX       = (GRAPHICS_REAL)((GRAPHICS_INT64)normalisedReference->characterExtents.topLeft.pointX);
+      extentTopY       = (GRAPHICS_REAL)((GRAPHICS_INT64)normalisedReference->characterExtents.topLeft.pointY);
+      extentBottomX    = (GRAPHICS_REAL)((GRAPHICS_INT64)normalisedReference->characterExtents.bottomRight.pointX);
+      extentBottomY    = (GRAPHICS_REAL)((GRAPHICS_INT64)normalisedReference->characterExtents.bottomRight.pointY);
+      
+      // Check and correct for descender dimensions
+      characterDescenderOffset = strokeGraphBase->descenderRatio * strokeGraphBase->graphColumnNumber; // 'column' and 'row' are back-to-front...
+      
+      // The descender row is an integer number for detection but a real number for correction...
+      // NOTE : this value is calculated once for the character being drawn and is reset once 
+      //        at the next function invocation
+      if (((GRAPHICS_UINT)extentBottomY) > ((GRAPHICS_UINT)characterDescenderOffset))
+        {
+        characterDescenderOffset = extentBottomY - characterDescenderOffset - ((GRAPHICS_REAL)1.0);
+        }
+      else
+        {
+        characterDescenderOffset = ((GRAPHICS_REAL)0.0);
+        }
+      
+      extentRangeX     = extentBottomX - extentTopX;
+      extentRangeY     = extentBottomY - extentTopY;
+      
+      characterResizeX = extentRangeX;
+      characterResizeY = extentRangeY;
+      
+      if (characterResizeX > (strokeTextStringCharacters->strokeTextCharacterWidth * deltaX))
+        {
+        characterResizeX = (strokeTextStringCharacters->strokeTextCharacterWidth * deltaX) / characterResizeX;
+        }
+      else
+        {
+        characterResizeX = (strokeTextStringCharacters->strokeTextCharacterWidth * deltaX) / characterResizeX;
+        }
+      
+      if (characterResizeY > (strokeTextStringCharacters->strokeTextCharacterDepth * deltaY))
+        {
+        characterResizeY = (strokeTextStringCharacters->strokeTextCharacterDepth * deltaY) / characterResizeY;
+        }
+      else
+        {
+        characterResizeY = (strokeTextStringCharacters->strokeTextCharacterDepth * deltaY) / characterResizeY;
+        } 
+      
+      // Now draw the segments
+      segmentTrack = normalisedReference->characterLineSegments;
+      
+      while (segmentTrack->nextLineSegment != nullptr)
+        {
+        startPointX = (GRAPHICS_FLOAT)((characterTrack->characterPlacementX * deltaX) + (segmentTrack->lineSegmentOriginX * (extentRangeX * characterResizeX)));
+        startPointY = (GRAPHICS_FLOAT)(((strokeTextStringCharacters->strokeTextAnchor.yAxisPoint) * deltaY) + (segmentTrack->lineSegmentOriginY * (extentRangeY * characterResizeY)));
+        startPointY = startPointY + (GRAPHICS_FLOAT)characterDescenderOffset;
+      
+        endPointX   = (GRAPHICS_FLOAT)((characterTrack->characterPlacementX * deltaX) + (segmentTrack->lineSegmentDestinationX * (extentRangeX * characterResizeX)));
+        endPointY   = (GRAPHICS_FLOAT)(((strokeTextStringCharacters->strokeTextAnchor.yAxisPoint) * deltaY) + (segmentTrack->lineSegmentDestinationY * (extentRangeY * characterResizeY)));
+        endPointY   = endPointY + (GRAPHICS_FLOAT)characterDescenderOffset;
+      
+        graphics.DrawLine((const Pen *)&pen, startPointX,  startPointY, endPointX, endPointY);
+      
+        segmentTrack = segmentTrack->nextLineSegment;
+        }
+      
+      // Return the components of the running average of the sum of the largest 'resize in X' values
+      characterTrack->characterWidthX.yAxisPoint = characterTrack->characterWidthX.yAxisPoint + ((GRAPHICS_REAL)1.0);
+      
+      characterTrack->characterWidthX.xAxisPoint = characterTrack->characterWidthX.xAxisPoint + characterResizeX;
+      }
+    else
+      {
+      if (normalisedReference->characterNumber == ALPHABET_ASCII_SPACE)
+        {
+        characterTrack->characterWidthX.yAxisPoint = characterTrack->characterWidthX.yAxisPoint + ((GRAPHICS_REAL)1.0);
+        }
+      else
+        {
+        objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
+        }
+      }
+    }
+  else
+    {
+    objectError = GRAPHICS_OBJECT_PARAMETER_ERROR;
+    }
+
+/******************************************************************************/
+
+  return(objectError);
+
+/******************************************************************************/
+  } /* end of drawNormalisedStrokeCharacter                                   */
 
 /******************************************************************************/
 /* computeCharacterExtents() :                                                */
@@ -568,6 +748,65 @@ graphicsError_t computeCharacterExtents(const GRAPHICS_UINT             characte
   } /* end of computeCharacterExtents                                         */
 
 /******************************************************************************/
+/* deleteCharacter() :                                                        */
+/******************************************************************************/
+
+graphicsError_t deleteCharacter(alphabetCharacters_tPtr selectedCharacter)
+  {
+/******************************************************************************/
+
+  lineSegment_tPtr thislineSegment = nullptr;
+  graphicsError_t  objectError      = GRAPHICS_NO_ERROR;
+
+/******************************************************************************/
+
+  if ((selectedCharacter != nullptr) && (selectedCharacter->characterLineSegments != nullptr))
+    {
+    if (selectedCharacter->numberOfLineSegments > ((GRAPHICS_UINT)0))
+      {
+      thislineSegment                     = selectedCharacter->characterLineSegments;
+      selectedCharacter->lineSegmentIndex = (GRAPHICS_INT)(selectedCharacter->numberOfLineSegments - ((GRAPHICS_UINT)1));
+      
+      while ((selectedCharacter->lineSegmentIndex >= ((GRAPHICS_INT)0)) && (selectedCharacter->numberOfLineSegments > ((GRAPHICS_UINT)0)))
+        {
+        if (fetchCharacterExtantSegment(  selectedCharacter->lineSegmentIndex,
+                                          selectedCharacter,
+                                         &thislineSegment) == GRAPHICS_NO_ERROR)
+          {
+          if (deleteCharacterExtantSegment(selectedCharacter,
+                                           thislineSegment) != GRAPHICS_NO_ERROR)
+            {
+            objectError = GRAPHICS_OBJECT_CHARACTER_ERROR;
+            break;
+            }
+          }
+        else
+          {
+          objectError = GRAPHICS_OBJECT_CHARACTER_ERROR;
+          break;
+          }
+        }
+      }
+    else
+      {
+      // The character in use is a pointer-based clone of a character in the 
+      // full alphabet list
+      delete(selectedCharacter);
+      }
+    }
+  else
+    {
+    objectError = GRAPHICS_OBJECT_PARAMETER_ERROR;
+    }
+
+/******************************************************************************/
+
+  return(objectError);
+
+/******************************************************************************/
+  } /* end of deleteCharacter                                                 */
+
+/******************************************************************************/
 /* deleteCharacterExtantSegment() :                                           */
 /******************************************************************************/
 
@@ -630,7 +869,7 @@ graphicsError_t flipCharacterHorizontally(alphabetCharacters_tPtr selectedCharac
 
   lineSegment_tPtr lineSegment   = nullptr;
                                  
-  GRAPHICS_INT     extentTop     = ((GRAPHICS_INT)0),
+  GRAPHICS_INT64   extentTop     = ((GRAPHICS_INT)0),
                    extentBottom  = ((GRAPHICS_INT)0);
                    
   GRAPHICS_FLOAT   midLine       = ((GRAPHICS_FLOAT)0),
@@ -862,7 +1101,7 @@ graphicsError_t flipCharacterVertically(alphabetCharacters_tPtr selectedCharacte
 
   lineSegment_tPtr lineSegment   = nullptr;
                                  
-  GRAPHICS_INT     extentLeft    = ((GRAPHICS_INT)0),
+  GRAPHICS_INT64   extentLeft    = ((GRAPHICS_INT)0),
                    extentRight   = ((GRAPHICS_INT)0);
                    
   GRAPHICS_FLOAT   midLine       = ((GRAPHICS_FLOAT)0),

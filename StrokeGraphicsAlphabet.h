@@ -45,6 +45,8 @@
 #define CHARACTER_CACHE_LENGTH             ((GRAPHICS_UINT)1)
 #define CHARACTER_CACHE_INDEX              ((GRAPHICS_UINT)0)
 
+#define ALPHABET_ASCII_SPACE               ((GRAPHICS_UINT)' ')
+
 typedef enum asciiNumericCharacters_t
   {
   ASCII_NUMERIC_0      = '0',
@@ -117,7 +119,7 @@ typedef enum alphabetCharacterState_tTag
                                                    
 #define GRAPHICS_SEGMENT_ANY_SYMBOL                ((wchar_t)0xffff) // match any symbol
 #define GRAPHICS_SEGMENT_NULL_SYMBOL               ((wchar_t)0x0000) // dummy symbol - the symbol(s) requested is(are) implicit
-                                                              // in the requested symbol type
+                                                                     // in the requested symbol type
 
 typedef enum graphicsSymbolsTypes_tTag
   {
@@ -127,6 +129,11 @@ typedef enum graphicsSymbolsTypes_tTag
   GRAPHICS_FILE_SYMBOL_TYPE_HEXADECIMAL,
   GRAPHICS_FILE_SYMBOL_TYPES
   } graphicsSymbolsTypes_t;
+
+// Character "boxing" needs a large-ish number to test for minimum width and the 
+// smallest absolute number i.e. zero to test for maximum width
+#define GRAPHICS_CHARACTER_MINIMUM_TEST       ((GRAPHICS_UINT)0x7FFFFFFF)
+#define GRAPHICS_CHARACTER_MAXIMUM_TEST       ((GRAPHICS_UINT)0x00000000)
 
 // The first character in a decimal number string and the decimal 
 // "shift"/divide by 10
@@ -184,9 +191,17 @@ typedef enum segmentPointIndicies_tTag
 #pragma pack(push,1)
 typedef struct characterPoint_t
   {
-  GRAPHICS_INT pointX;
-  GRAPHICS_INT pointY;
+  GRAPHICS_INT64 pointX;
+  GRAPHICS_INT64 pointY;
   } characterPoint_t, *characterPoint_tPtr;
+#pragma pack(pop)
+
+#pragma pack(push,1)
+typedef struct characterPointReal_t
+  {
+  GRAPHICS_REAL pointX;
+  GRAPHICS_REAL pointY;
+  } characterPointReal_t, *characterPointReal_tPtr;
 #pragma pack(pop)
 
 // A single point
@@ -208,12 +223,20 @@ typedef struct characterExtents_t
 #pragma pack(pop)
 
 #pragma pack(push,1)
+typedef struct characterExtentsReal_t
+  {
+  characterPointReal_t topLeft;
+  characterPointReal_t bottomRight;
+  } characterExtentsReal_t, *characterExtentsReal_tPtr;
+#pragma pack(pop)
+
+#pragma pack(push,1)
 typedef struct lineSegment_tTag
   {
-  GRAPHICS_INT      lineSegmentOriginX;
-  GRAPHICS_INT      lineSegmentOriginY;
-  GRAPHICS_INT      lineSegmentDestinationX;
-  GRAPHICS_INT      lineSegmentDestinationY;
+  GRAPHICS_INT64    lineSegmentOriginX;
+  GRAPHICS_INT64    lineSegmentOriginY;
+  GRAPHICS_INT64    lineSegmentDestinationX;
+  GRAPHICS_INT64    lineSegmentDestinationY;
   lineSegment_tTag *nextLineSegment;
   lineSegment_tTag *lastLineSegment;
   } lineSegment_t, *lineSegment_tPtr;
@@ -264,11 +287,25 @@ typedef struct alphabetCharactersReal_tTag
 #pragma pack(push,1)
 typedef struct strokeTextStringDescriptor_tTag
   {
-  GRAPHICS_CHAR_PTR strokeTextString;
-  singlePoint_t     strokeTextAnchor;                // referenced to { x == 0.0, y == 0.0 }
-  singlePoint_t     strokeTextCharacterDimension;    // x- and y-dimensions
-  singlePoint_t     strokeTextInterCharacterSpacing; // post-character space to right and "beneath"
+  GRAPHICS_WCHAR_PTR     strokeTextString;
+  singlePoint_t          strokeTextAnchor;                // referenced to { x == 0.0, y == 0.0 }
+  GRAPHICS_REAL          strokeTextCharacterWidth;        // single character width in x
+  GRAPHICS_REAL          strokeTextCharacterDepth;        // single character depth in y
+  characterExtentsReal_t strokeTextFrameDimension;        // x- and y-dimensions of the total string
+  singlePoint_t          strokeTextInterCharacterSpacing; // post-character space to right and "beneath"
+  GRAPHICS_REAL          strokeLineWidth;
+  objectColour_t         strokeTextColour;
   } strokeTextStringDescriptor_t, *strokeTextStringDescriptor_tPtr;
+#pragma pack(pop)
+
+#pragma pack(push,1)
+typedef struct strokeCharacterTrack_tTag
+  {
+  GRAPHICS_REAL characterPlacementX;
+  GRAPHICS_REAL characterPlacementY;
+  singlePoint_t characterWidthX;
+  singlePoint_t characterWidthY;
+  } strokeCharacterTrack_t, *strokeCharacterTrack_tPtr;
 #pragma pack(pop)
 
 /******************************************************************************/

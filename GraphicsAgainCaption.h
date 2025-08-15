@@ -38,12 +38,11 @@
                                                              
 #define GRAPHICS_ALPHABET_FILE_LENGTH                        (MAX_LOADSTRING)
 
-#define GRAPHICS_STROKE_TEXT_HEADLINE                        "RFM 9x Test Harness"
+#define GRAPHICS_STROKE_TEXT_HEADLINE                         L"RFM 9x Test Harness" // "ABCDEFGHIJKLMNOPQRSTUVWXYZ" // "!\"""#$%^&*()-=_+[]{}~#\\;:'@`,.<>/?" // "abcdefghijklmnopqrstuvwxyz" //
 
 /******************************************************************************/
 
-extern alphabetFileDescriptor_t      alphabetFileDescriptor;
-extern strokeTextStringDescriptor_t  strokeTextHeadlineCharacters;
+extern alphabetFileDescriptor_t alphabetFileDescriptor;
 
 /******************************************************************************/
 

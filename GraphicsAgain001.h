@@ -31,8 +31,8 @@ using namespace Gdiplus;
 
 #define CANVAS_SIZE_ZERO_X                 ((double)64.0)
 #define CANVAS_SIZE_ZERO_Y                 ((double)64.0)
-#define CANVAS_SIZE_WIDTH                  ((double)1440.0)
-#define CANVAS_SIZE_HEIGHT                 ((double)768.0)
+#define CANVAS_SIZE_WIDTH                  ((double)1680.0)
+#define CANVAS_SIZE_HEIGHT                 ((double)840.0)
 
 #define GDI_PLUS_WINDOW_RECTANGLE_X_LEFT   ((LONG)CANVAS_SIZE_ZERO_X)
 #define GDI_PLUS_WINDOW_RECTANGLE_Y_TOP    ((LONG)CANVAS_SIZE_ZERO_Y)
@@ -45,35 +45,36 @@ using namespace Gdiplus;
 #define GRAPHICS_AGAIN_TITLE               L"GraphicsAgain001"
 #define GRAPHICS_AGAIN_CLASS               L"GraphicsAgain001"
 
-#define GRAPHICS_AGAIN_ARGUMENT_0           (0)
-#define GRAPHICS_AGAIN_ARGUMENT_1           (GRAPHICS_AGAIN_ARGUMENT_0 + 1)
-#define GRAPHICS_AGAIN_ARGUMENT_2           (GRAPHICS_AGAIN_ARGUMENT_1 + 1)
-#define GRAPHICS_AGAIN_ARGUMENT_3           (GRAPHICS_AGAIN_ARGUMENT_2 + 1)
-#define GRAPHICS_AGAIN_ARGUMENTS            (GRAPHICS_AGAIN_ARGUMENT_3 + 1)
+#define GRAPHICS_AGAIN_ARGUMENT_0          (0)
+#define GRAPHICS_AGAIN_ARGUMENT_1          (GRAPHICS_AGAIN_ARGUMENT_0 + 1)
+#define GRAPHICS_AGAIN_ARGUMENT_2          (GRAPHICS_AGAIN_ARGUMENT_1 + 1)
+#define GRAPHICS_AGAIN_ARGUMENT_3          (GRAPHICS_AGAIN_ARGUMENT_2 + 1)
+#define GRAPHICS_AGAIN_ARGUMENTS           (GRAPHICS_AGAIN_ARGUMENT_3 + 1)
 
-#define GRAPHICS_AGAIN_SERVER_IP_ADDRESS    GRAPHICS_AGAIN_ARGUMENT_1
-#define GRAPHICS_AGAIN_SERVER_PORT_NUMBER   GRAPHICS_AGAIN_ARGUMENT_2
-#define GRAPHICS_AGAIN_ALPHABET_FILE        GRAPHICS_AGAIN_ARGUMENT_3
+#define GRAPHICS_AGAIN_SERVER_IP_ADDRESS   GRAPHICS_AGAIN_ARGUMENT_1
+#define GRAPHICS_AGAIN_SERVER_PORT_NUMBER  GRAPHICS_AGAIN_ARGUMENT_2
+#define GRAPHICS_AGAIN_ALPHABET_FILE       GRAPHICS_AGAIN_ARGUMENT_3
 
-#define KEY_ESC_EXIT                        (0x1B)
+#define KEY_ESC_EXIT                       (0x1B)
 
-#define GRAPHICS_CHAR_EOS                   (0x00)
-#define GRAPHICS_WCHAR_EOS_LENGTH           (2)
+#define GRAPHICS_CHAR_EOS                  (0x00)
+#define GRAPHICS_WCHAR_EOS_LENGTH          (2)
 
 // Test text strings : 
-#define GRAPHICS_RECTANGLE_ONE_TEXT         L" Graphics "
+#define GRAPHICS_RECTANGLE_ONE_TEXT        L" Graphics "
 
 /******************************************************************************/
 
 // Ring Objects :
-#define GRAPHICS_RING_OUTPUT_WSTR_LENGTH    (256)
+#define GRAPHICS_RING_OUTPUT_WSTR_LENGTH      (256)
+                                             
+#define GRAPHICS_OBJECT_CAPTION_WSTR          L"GUI Graphics Development"
+#define GRAPHICS_OBJECT_TYPE_NONE_WSTR        L"GRAPHICS_OBJECT_TYPE_NONE"
+#define GRAPHICS_OBJECT_TYPE_RECTANGLE_WSTR   L"GRAPHICS_OBJECT_TYPE_RECTANGLE"
+#define GRAPHICS_OBJECT_TYPE_STATIC_TEXT_WSTR L"GRAPHICS_OBJECT_TYPE_STATIC_TEXT"
+#define GRAPHICS_OBJECT_TYPE_UNKNOWN_WSTR     L"GRAPHICS_OBJECT_TYPE_UNKNOWN_STR"
 
-#define GRAPHICS_OBJECT_CAPTION_WSTR        L"GUI Graphics Development"
-#define GRAPHICS_OBJECT_TYPE_NONE_WSTR      L"GRAPHICS_OBJECT_TYPE_NONE"
-#define GRAPHICS_OBJECT_TYPE_RECTANGLE_WSTR L"GRAPHICS_OBJECT_TYPE_RECTANGLE"
-#define GRAPHICS_OBJECT_TYPE_UNKNOWN_WSTR   L"GRAPHICS_OBJECT_TYPE_UNKNOWN_STR"
-
-#define GRAPHICS_OBJECT_TYPE_CODE           (0x0FEDC000)
+#define GRAPHICS_OBJECT_TYPE_CODE             (0x0FEDC000)
 
 typedef enum graphicsObjectType_tTag
   {
@@ -264,6 +265,12 @@ typedef struct canvasDescriptor_tTag
                                                  (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
                                                  (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
                                                  (FULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
+
+/* The stroke graph frame background is grey... */
+#define FRAME_BACKGROUND_COLOUR_RED           (0xa5)
+#define FRAME_BACKGROUND_COLOUR_GREEN         (0xa6)
+#define FRAME_BACKGROUND_COLOUR_BLUE          (0xa8)
+#define FRAME_BACKGROUND_COLOUR_A             (0xff)
 
 typedef enum lineSegmentColours_tTag
   {
@@ -458,32 +465,59 @@ typedef struct guiObjectHoldingRing_tTag
   } guiObjectHoldingRing_t, *guiObjectHoldingRing_tPtr;
 #pragma pack(pop)
 
+/******************************************************************************/
+/* GUI Object Size and Placement :                                            */
+/* - all of the dimensions are initially scaled by the default screen size.   */
+/*   This is recalculated as the window changes                               */
+/******************************************************************************/
+
 #define RECTANGLE_OBJECT_ONE_BASE_X      ((GRAPHICS_REAL)10.0)
 #define RECTANGLE_OBJECT_ONE_BASE_Y      ((GRAPHICS_REAL)10.0)
                                         
-#define RECTANGLE_OBJECT_ONE_LEFT_X      (RECTANGLE_OBJECT_ONE_BASE_X / globalScreenCoordinates.screenRightX)
-#define RECTANGLE_OBJECT_ONE_TOP_Y       (RECTANGLE_OBJECT_ONE_BASE_Y / globalScreenCoordinates.screenBottomY)
-#define RECTANGLE_OBJECT_ONE_RIGHT_X     ((RECTANGLE_OBJECT_ONE_BASE_X + 20.0) / globalScreenCoordinates.screenRightX)
-#define RECTANGLE_OBJECT_ONE_BOTTOM_Y    ((RECTANGLE_OBJECT_ONE_BASE_Y + 20.0) / globalScreenCoordinates.screenBottomY)
+#define RECTANGLE_OBJECT_ONE_LEFT_X      (RECTANGLE_OBJECT_ONE_BASE_X / canvasSize.right)
+#define RECTANGLE_OBJECT_ONE_TOP_Y       (RECTANGLE_OBJECT_ONE_BASE_Y / canvasSize.bottom)
+#define RECTANGLE_OBJECT_ONE_RIGHT_X     ((RECTANGLE_OBJECT_ONE_BASE_X + 20.0) / canvasSize.right)
+#define RECTANGLE_OBJECT_ONE_BOTTOM_Y    ((RECTANGLE_OBJECT_ONE_BASE_Y + 20.0) / canvasSize.bottom)
 #define RECTANGLE_OBJECT_ONE_LINEWIDTH   ((GRAPHICS_UINT)3)
                                          
 #define RECTANGLE_OBJECT_TWO_BASE_X      ((GRAPHICS_REAL)200.0)
 #define RECTANGLE_OBJECT_TWO_BASE_Y      ((GRAPHICS_REAL)50.0)
                                          
-#define RECTANGLE_OBJECT_TWO_LEFT_X      (RECTANGLE_OBJECT_TWO_BASE_X / globalScreenCoordinates.screenRightX)
-#define RECTANGLE_OBJECT_TWO_TOP_Y       (RECTANGLE_OBJECT_TWO_BASE_Y / globalScreenCoordinates.screenBottomY)
-#define RECTANGLE_OBJECT_TWO_RIGHT_X     ((RECTANGLE_OBJECT_TWO_BASE_X + 50.0) / globalScreenCoordinates.screenRightX)
-#define RECTANGLE_OBJECT_TWO_BOTTOM_Y    ((RECTANGLE_OBJECT_TWO_BASE_Y + 50.0) / globalScreenCoordinates.screenBottomY)
+#define RECTANGLE_OBJECT_TWO_LEFT_X      (RECTANGLE_OBJECT_TWO_BASE_X / canvasSize.right)
+#define RECTANGLE_OBJECT_TWO_TOP_Y       (RECTANGLE_OBJECT_TWO_BASE_Y / canvasSize.bottom)
+#define RECTANGLE_OBJECT_TWO_RIGHT_X     ((RECTANGLE_OBJECT_TWO_BASE_X + 50.0) / canvasSize.right)
+#define RECTANGLE_OBJECT_TWO_BOTTOM_Y    ((RECTANGLE_OBJECT_TWO_BASE_Y + 50.0) / canvasSize.bottom)
 #define RECTANGLE_OBJECT_TWO_LINEWIDTH   ((GRAPHICS_UINT)2)
                                          
 #define RECTANGLE_OBJECT_THREE_BASE_X    ((GRAPHICS_REAL)225.0)
 #define RECTANGLE_OBJECT_THREE_BASE_Y    ((GRAPHICS_REAL)25.0)
                                          
-#define RECTANGLE_OBJECT_THREE_LEFT_X    (RECTANGLE_OBJECT_THREE_BASE_X / globalScreenCoordinates.screenRightX)
-#define RECTANGLE_OBJECT_THREE_TOP_Y     (RECTANGLE_OBJECT_THREE_BASE_Y / globalScreenCoordinates.screenBottomY)
-#define RECTANGLE_OBJECT_THREE_RIGHT_X   ((RECTANGLE_OBJECT_THREE_BASE_X + 50.0) / globalScreenCoordinates.screenRightX)
-#define RECTANGLE_OBJECT_THREE_BOTTOM_Y  ((RECTANGLE_OBJECT_THREE_BASE_Y + 50.0) / globalScreenCoordinates.screenBottomY)
+#define RECTANGLE_OBJECT_THREE_LEFT_X    (RECTANGLE_OBJECT_THREE_BASE_X / canvasSize.right)
+#define RECTANGLE_OBJECT_THREE_TOP_Y     (RECTANGLE_OBJECT_THREE_BASE_Y / canvasSize.bottom)
+#define RECTANGLE_OBJECT_THREE_RIGHT_X   ((RECTANGLE_OBJECT_THREE_BASE_X + 50.0) / canvasSize.right)
+#define RECTANGLE_OBJECT_THREE_BOTTOM_Y  ((RECTANGLE_OBJECT_THREE_BASE_Y + 50.0) / canvasSize.bottom)
 #define RECTANGLE_OBJECT_THREE_LINEWIDTH ((GRAPHICS_UINT)1)
+
+#define HEADLINE_BASE_X                  ((GRAPHICS_REAL)50.0)
+#define HEADLINE_BASE_Y                  ((GRAPHICS_REAL)100.0)
+
+#define HEADLINE_TEXT_ANCHOR_X           (HEADLINE_BASE_X / canvasSize.right)
+#define HEADLINE_TEXT_ANCHOR_Y           (HEADLINE_BASE_Y / canvasSize.bottom)
+
+#define HEADLINE_CHARACTER_WIDTH         ((GRAPHICS_REAL)(15.0 / canvasSize.right))
+#define HEADLINE_CHARACTER_DEPTH         ((GRAPHICS_REAL)(20.0 / canvasSize.bottom))
+
+#define HEADLINE_TEXT_WIDTH              (HEADLINE_CHARACTER_WIDTH * ((GRAPHICS_REAL)wcslen(GRAPHICS_STROKE_TEXT_HEADLINE))) + (HEADLINE_TEXT_DEPTH_SPACING * ((GRAPHICS_REAL)wcslen(GRAPHICS_STROKE_TEXT_HEADLINE))) // multiple characters 'x'
+#define HEADLINE_TEXT_DEPTH              HEADLINE_CHARACTER_DEPTH // single character 'y'
+#define HEADLINE_TEXT_WIDTH_SPACING      ((GRAPHICS_REAL)1.0)     // inter-character empty space
+#define HEADLINE_TEXT_DEPTH_SPACING      ((GRAPHICS_REAL)1.0)     // inter-character empty space
+
+#define HEADLINE_TEXT_WIDTH_X            (HEADLINE_TEXT_WIDTH / canvasSize.right)        
+#define HEADLINE_TEXT_DEPTH_Y            HEADLINE_TEXT_DEPTH        
+#define HEADLINE_TEXT_WIDTH_SPACING_X    (HEADLINE_TEXT_WIDTH_SPACING / canvasSize.right)
+#define HEADLINE_TEXT_DEPTH_SPACING_Y    (HEADLINE_TEXT_WIDTH_SPACING / canvasSize.bottom)
+
+#define HEADLINE_TEXT_LINEWIDTH          ((GRAPHICS_REAL)2.0)
 
 #pragma pack(push,1)
 typedef struct rectangleObject_tTag
@@ -499,12 +533,10 @@ typedef struct rectangleObject_tTag
 #pragma pack(push,1)
 typedef struct staticTextObject_tTag
   {
-  graphicsObjectType_t   objectType;
-  graphicsObjectType_t   nextDrawingObjectType;
-  GRAPHICS_VOID_PTR      nextDrawingObject;
-  objectColour_t         staticTextColour;
-  rectangleDimensions_t  staticTextDimensions;
-  GRAPHICS_WCHAR_PTR     staticText;
+  graphicsObjectType_t            objectType;
+  graphicsObjectType_t            nextDrawingObjectType;
+  GRAPHICS_VOID_PTR               nextDrawingObject;
+  strokeTextStringDescriptor_tPtr staticText;
   } staticTextObject_t, *staticTextObject_tPtr;
 #pragma pack(pop)
 
@@ -516,7 +548,7 @@ typedef struct staticTextObject_tTag
 #define STROKE_FRAME_X_AXIS_POINTS         ((GRAPHICS_REAL)16.0) // 'x' = 0.0 --> point 0, 'x' = 1.0 --> point 15
 #define STROKE_FRAME_Y_AXIS_POINTS         ((GRAPHICS_REAL)16.0) // 'y' = 0.0 --> point 0, 'y' = 1.0 --> point 15
 
-// The normalised stroke frame
+// The normalised stroke frame coordinates
 #define STROKE_FRAME_LEFT_X_NORMAL         ((GRAPHICS_REAL)0.0)
 #define STROKE_FRAME_TOP_Y_NORMAL          ((GRAPHICS_REAL)0.0)
 #define STROKE_FRAME_RIGHT_X_NORMAL        ((GRAPHICS_REAL)1.0)
@@ -538,6 +570,9 @@ typedef struct staticTextObject_tTag
 #define STROKE_FRAME_COLOUR                BLUE_PEN // DO NOT ENCLOSE THIS MACRO IN BRACKETS '('..')' OR '{'..'}'
 #define STROKE_FRAME_COLOUR_CODE           ((GRAPHICS_UINT)BLUE_PEN_CODE)
 
+#define DESCENT_ROW_PROPORTION             ((GRAPHICS_REAL)0.8) // used to derive the row number where a characters'
+                                                                // line segments are considered part of a descender
+
 #define MIDDLE_FRAME_COLOUR                WHITE_PEN_OPAQUE
 #define MIDDLE_FRAME_COLOUR_CODE           ((GRAPHICS_UINT)WHITE_PEN_OPAQUE_CODE)
 
@@ -551,70 +586,74 @@ typedef struct staticTextObject_tTag
 
 /******************************************************************************/
 
-extern WCHAR                     objectOutput[GRAPHICS_RING_OUTPUT_WSTR_LENGTH];
-extern WCHAR                     captionPanel[GRAPHICS_RING_OUTPUT_WSTR_LENGTH];
+extern globalScreenCoordinates_t    globalScreenCoordinates;
 
-extern canvasDescriptor_t        canvasSize;
+extern WCHAR                        objectOutput[GRAPHICS_RING_OUTPUT_WSTR_LENGTH];
+extern WCHAR                        captionPanel[GRAPHICS_RING_OUTPUT_WSTR_LENGTH];
+                                    
+extern canvasDescriptor_t           canvasSize;
+extern canvasDescriptor_t           localCanvasSize;
+                                    
+extern alphabetCharacters_tPtr      characterReference;
+                                    
+extern strokeGraphPointBase_t       strokeGraphPointBase;
+                                    
+extern bool                         mouseOverObject;
+extern bool                         objectPositionTestFlag;
+extern GRAPHICS_SHORT               mouseXPosition;
+extern GRAPHICS_SHORT               mouseYPosition;
+                                    
+extern guiObjectHoldingRing_tPtr    guiObjectHoldingRingBaseLink;
+extern guiObjectHoldingRing_tPtr    guiObjectHoldingRingCurrent;
+extern guiObjectHoldingRing_tPtr    guiObjectHoldingRingFreePtr;
 
-extern alphabetCharacters_tPtr   characterReference;
-
-extern strokeGraphPointBase_t    strokeGraphPointBase;
-
-extern bool                      mouseOverObject;
-extern bool                      objectPositionTestFlag;
-extern GRAPHICS_SHORT            mouseXPosition;
-extern GRAPHICS_SHORT            mouseYPosition;
-
-extern guiObjectHoldingRing_tPtr guiObjectHoldingRingBaseLink;
-extern guiObjectHoldingRing_tPtr guiObjectHoldingRingCurrent;
-extern guiObjectHoldingRing_tPtr guiObjectHoldingRingFreePtr;
-
+// Headline Text : 
+extern strokeTextStringDescriptor_t headlineString;
+extern objectColour_t               headlineColour;
 // Rectangle 1 : 
 #pragma pack(push,1)
-extern rectangleObject_tPtr      rectangleObjectOne;
-#pragma pack(pop)
-extern rectangleDimensions_t     rectangleObjectOneDimensions;
-extern objectColour_t            rectangleObjectOneColour;
-#pragma pack(push,1)
-extern graphicsActiveObject_t    rectangleObjectOneActiveBehaviour;
-#pragma pack(pop)
-
-// Rectangle 1 text : 
-#pragma pack(push,1)
-extern staticTextObject_tPtr     rectangleOneText  ;               
-#pragma pack(pop)
-extern rectangleDimensions_t     rectangleOneTextDimensions;                   
-extern objectColour_t            rectangleOneTextColour;
-#pragma pack(push,1)
-extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
-#pragma pack(pop)
-
-// Rectangle 2 : 
-#pragma pack(push,1)
-extern rectangleObject_tPtr      rectangleObjectTwo;
-#pragma pack(pop)
-extern rectangleDimensions_t     rectangleObjectTwoDimensions;
-extern objectColour_t            rectangleObjectTwoColour;
-#pragma pack(push,1)
-extern graphicsActiveObject_t    rectangleObjectTwoActiveBehaviour;
-#pragma pack(pop)
-
-// Rectangle 3 : 
-#pragma pack(push,1)
-extern rectangleObject_tPtr      rectangleObjectThree;
-#pragma pack(pop)
-extern rectangleDimensions_t     rectangleObjectThreeDimensions;
-extern objectColour_t            rectangleObjectThreeColour;
+extern rectangleObject_tPtr         rectangleObjectOne;
+#pragma pack(pop)                   
+extern rectangleDimensions_t        rectangleObjectOneDimensions;
+extern objectColour_t               rectangleObjectOneColour;
+#pragma pack(push,1)                
+extern graphicsActiveObject_t       rectangleObjectOneActiveBehaviour;
+#pragma pack(pop)                   
+                                    
+// Rectangle 1 Text :               
+#pragma pack(push,1)                
+extern staticTextObject_tPtr        rectangleOneText;               
+#pragma pack(pop)                   
+extern rectangleDimensions_t        rectangleOneTextDimensions;                   
+extern objectColour_t               rectangleOneTextColour;
+#pragma pack(push,1)                
+extern graphicsActiveObject_t       rectangleOneTextActiveBehaviour;
+#pragma pack(pop)                   
+                                    
+// Rectangle 2 :                    
+#pragma pack(push,1)                
+extern rectangleObject_tPtr         rectangleObjectTwo;
+#pragma pack(pop)                   
+extern rectangleDimensions_t        rectangleObjectTwoDimensions;
+extern objectColour_t               rectangleObjectTwoColour;
+#pragma pack(push,1)                
+extern graphicsActiveObject_t       rectangleObjectTwoActiveBehaviour;
+#pragma pack(pop)                   
+                                    
+// Rectangle 3 :                    
+#pragma pack(push,1)                
+extern rectangleObject_tPtr         rectangleObjectThree;
+#pragma pack(pop)                   
+extern rectangleDimensions_t        rectangleObjectThreeDimensions;
+extern objectColour_t               rectangleObjectThreeColour;
 
 /******************************************************************************/
 
 extern graphicsError_t instantiateObjectHoldingRingObject(      guiObjectHoldingRing_tPtr   *objectHoldingRingObject,
                                                           const guiObjectNumberingControl_t  guiObjectNumberingControl,
                                                           const GRAPHICS_INT                 guiObjectNumber);
-extern graphicsError_t instantiateStaticTextObject(      staticTextObject_tPtr *staticTextObject,
-                                                   const GRAPHICS_WCHAR_PTR     staticText,
-                                                   const rectangleDimensions_t  staticTextDimensions,
-                                                   const objectColour_t         staticTextColour);
+extern graphicsError_t instantiateStaticTextObject(      staticTextObject_tPtr           *staticTextObject,
+                                                   const strokeTextStringDescriptor_tPtr  strokeTextObject);
 extern graphicsError_t instantiateRectangleObject(      rectangleObject_tPtr  *rectangleObject,
                                                   const rectangleDimensions_t  rectangleDimensions,
                                                   const objectColour_t         rectangleColour);
@@ -633,11 +672,16 @@ extern graphicsError_t addGuiObjectToHoldingRing(guiObjectHoldingRing_tPtr  inse
 
 extern graphicsError_t addGuiObjectToGuiChain(GRAPHICS_VOID_PTR newGuiObject,
                                               GRAPHICS_VOID_PTR lastGuiObject);
-extern graphicsError_t computeCompositeObjectBoundary(guiObjectHoldingRing_tPtr objectHoldingRingRoot);
 
-extern graphicsError_t guiPrintStaticText(HDC                 hdc,
-                                          commonObject_tPtr   graphicsObject,
-                                          canvasDescriptor_t *canvasSize);
+extern graphicsError_t computeStrokeTextBoundary(const staticTextObject_tPtr        staticTextObject,
+                                                 const alphabetCharacters_tPtr      characterList,
+                                                 const canvasDescriptor_tPtr        canvasSize,
+                                                       characterExtentsReal_tPtr    strokeTextStringBoundary);
+
+extern graphicsError_t computeCompositeObjectBoundary(      guiObjectHoldingRing_tPtr    objectHoldingRingRoot,
+                                                      const alphabetCharacters_tPtr      characterList,
+                                                      const canvasDescriptor_tPtr        canvasSize);
+
 extern graphicsError_t guiDrawRectangle(HDC                 hdc,
                                         commonObject_tPtr   graphicsObject,
                                         canvasDescriptor_t *canvasSize);
@@ -657,7 +701,10 @@ extern graphicsError_t rectangleObjectOneHandler(GRAPHICS_VOID_PTR handlingMode)
 extern graphicsError_t rectangleObjectTwoHandler(GRAPHICS_VOID_PTR handlingMode);
 extern graphicsError_t rectangleObjectThreeHandler(GRAPHICS_VOID_PTR handlingMode);
 
-extern graphicsError_t printHoldingRingObject(guiObjectHoldingRing_tPtr ringObjectBase);
+extern graphicsError_t traverseHoldingRingObject(guiObjectHoldingRing_tPtr ringObjectBase);
+extern graphicsError_t printHoldingRingObject(guiObjectHoldingRing_tPtr ringObjectBase,
+                                              GRAPHICS_WCHAR_PTR        objectOutput,
+                                              GRAPHICS_WCHAR_PTR        captionPanel);
 extern graphicsError_t printMessageBox(WCHAR *message, WCHAR *caption);
 
 extern graphicsError_t setCanvasCoordinates(canvasDescriptor_t *canvasSize,

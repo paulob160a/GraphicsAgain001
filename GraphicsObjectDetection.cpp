@@ -101,7 +101,7 @@ bool testHoldingRingObjectType(graphicsObjectType_t objectType)
   {
 /******************************************************************************/
 
-  bool legalObjectError = false;
+  bool legalObjectError = true;
 
 /******************************************************************************/
 
@@ -116,7 +116,7 @@ bool testHoldingRingObjectType(graphicsObjectType_t objectType)
     case GRAPHICS_OBJECT_TYPE_STATIC_TEXT : [[fallthrough]]; // warning C26819 fallthrough is explicit
     case GRAPHICS_OBJECT_TYPE_COMPOSITE   : [[fallthrough]]; // warning C26819 fallthrough is explicit
     case GRAPHICS_OBJECT_TYPE_UNKNOWN     : break;
-    default                               : legalObjectError = true;
+    default                               : legalObjectError = false;
                                             break;
     }
 
