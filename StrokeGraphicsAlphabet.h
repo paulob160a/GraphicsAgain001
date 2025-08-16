@@ -225,8 +225,10 @@ typedef struct characterExtents_t
 #pragma pack(push,1)
 typedef struct characterExtentsReal_t
   {
-  characterPointReal_t topLeft;
-  characterPointReal_t bottomRight;
+  characterPointReal_t topLeft;        // scaled top-left point
+  characterPointReal_t bottomRight;    // scaled bottom-right point
+  characterPointReal_t topLeftRaw;     // unscaled top-left point
+  characterPointReal_t bottomRightRaw; // unscaled bottom-right point
   } characterExtentsReal_t, *characterExtentsReal_tPtr;
 #pragma pack(pop)
 
@@ -295,6 +297,7 @@ typedef struct strokeTextStringDescriptor_tTag
   singlePoint_t          strokeTextInterCharacterSpacing; // post-character space to right and "beneath"
   GRAPHICS_REAL          strokeLineWidth;
   objectColour_t         strokeTextColour;
+  bool                   drawStrokeTextBoundary;
   } strokeTextStringDescriptor_t, *strokeTextStringDescriptor_tPtr;
 #pragma pack(pop)
 

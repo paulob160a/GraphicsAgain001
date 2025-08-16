@@ -716,7 +716,18 @@ VOID OnPaint(HDC                        hdc,
                                                                                characterList,
                                                                                (const strokeFrame_tPtr)characterFrame,
                                                                                (const canvasDescriptor_tPtr)canvasSize,
-                                                                               (const strokeGraphPointBase_tPtr)strokeGraphBase);
+                                                                               (const strokeGraphPointBase_tPtr)strokeGraphBase,
+                                                                                                               &strokeTextStringBoundary);
+
+// TEST :
+#if (1)
+                                                  strokeTextStringBoundary = { { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) }, { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) }};
+
+                                                  objectError = computeStrokeTextBoundary((const strokeTextStringDescriptor_tPtr)&headlineString,
+                                                                                          (const canvasDescriptor_tPtr)canvasSize,
+                                                                                                                      &strokeTextStringBoundary);
+#endif
+// TEST :
                                                   break;
 
           case GRAPHICS_OBJECT_TYPE_NONE        : // currently "do nothing" for deviant cases - TBC!

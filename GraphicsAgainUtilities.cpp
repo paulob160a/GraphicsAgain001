@@ -81,7 +81,27 @@ strokeTextStringDescriptor_t headlineString                   = {
                                                                   HEADLINE_TEXT_DEPTH_SPACING_Y
                                                                   },
                                                                 HEADLINE_TEXT_LINEWIDTH,
-                                                                headlineColour
+                                                                headlineColour,
+                                                                true
+                                                                };
+
+characterExtentsReal_t  strokeTextStringBoundary              = {
+                                                                  {
+                                                                  ((GRAPHICS_REAL)0.0),
+                                                                  ((GRAPHICS_REAL)0.0)
+                                                                  },
+                                                                  {
+                                                                  ((GRAPHICS_REAL)0.0),
+                                                                  ((GRAPHICS_REAL)0.0)
+                                                                  },
+                                                                  {
+                                                                  ((GRAPHICS_REAL)0.0),
+                                                                  ((GRAPHICS_REAL)0.0)
+                                                                  },
+                                                                  {
+                                                                  ((GRAPHICS_REAL)0.0),
+                                                                  ((GRAPHICS_REAL)0.0)
+                                                                  }
                                                                 };
 
 rectangleDimensions_t     rectangleObjectOneDimensions        = {
@@ -190,7 +210,7 @@ strokeFrame_t             characterFrame                    = {
                                                               };
 
 bool                      mouseOverObject                   = false; // flag when the mouse pointer is in an objects' perimeter
-bool                      objectPositionTestFlag            = false; // flag the position test is enabled for a single traverse 
+bool                      objectPositionTestFlag            = true; // flag the position test is enabled for a single traverse 
                                                                      // of the holding ring
 GRAPHICS_SHORT            mouseXPosition                    = ((GRAPHICS_SHORT)0);
 GRAPHICS_SHORT            mouseYPosition                    = ((GRAPHICS_SHORT)0);
@@ -647,6 +667,7 @@ graphicsError_t deleteCharacterStrokeGraph(strokeGraphPointBase_tPtr strokeGraph
 
 /******************************************************************************/
   } /* end of deleteCharacterStrokeGraph                                      */
+
 /******************************************************************************/
 /* drawStrokeCharacter() :                                                    */
 /******************************************************************************/
@@ -704,6 +725,19 @@ graphicsError_t drawStrokeCharacter(       HDC                          hdc,
 
 /******************************************************************************/
 /* drawStrokeText() :                                                         */
+/* - compute the screen positions of each stroke character in a string and    */
+/*   draw the characters in the assigned colour. If enabled draw the string's */
+/*   boundary rectangle                                                       */
+/*   NOTE : this function also returns the top-left and bottom-right x- and   */
+/*          y-coordinates of the string's boundary rectangle. This is a by-   */
+/*          product of the drawing process and is principally used to draw    */
+/*          the string's boundary rectangle, if it is enabled in the string's */
+/*          describing structure. It is also accurate and updated at each     */
+/*          screen redraw. Which means this function can be used "purely"(!)  */
+/*          to compute this boundary IF the text drawing is switched off.     */
+/*          Computing the boundary rectangle is quite simple given the        */
+/*          information in the stroke text structure and is copied to the     */
+/*          function "computeStrokeTextBoundary()"                            */
 /******************************************************************************/
 
 graphicsError_t drawStrokeText(      HDC                             hdc,
@@ -711,7 +745,8 @@ graphicsError_t drawStrokeText(      HDC                             hdc,
                                      alphabetCharacters_tPtr         characterList,
                                const strokeFrame_tPtr                characterFrame,
                                const canvasDescriptor_tPtr           canvasSize,
-                               const strokeGraphPointBase_tPtr       strokeGraphBase)
+                               const strokeGraphPointBase_tPtr       strokeGraphBase,
+                                     characterExtentsReal_tPtr       strokeTextStringBoundary)
   {
 /******************************************************************************/
 
@@ -747,17 +782,6 @@ graphicsError_t drawStrokeText(      HDC                             hdc,
                                                          nullptr
                                                          };
 
-  characterExtentsReal_t    strokeTextStringBoundary =   {
-                                                           {
-                                                           ((GRAPHICS_REAL)0.0),
-                                                           ((GRAPHICS_REAL)0.0)
-                                                           },
-                                                           {
-                                                           ((GRAPHICS_REAL)0.0),
-                                                           ((GRAPHICS_REAL)0.0)
-                                                           }
-                                                         };
-
   graphicsError_t             objectError              = GRAPHICS_NO_ERROR;
 
 /******************************************************************************/
@@ -784,11 +808,6 @@ graphicsError_t drawStrokeText(      HDC                             hdc,
 
         staticTextObject.staticText     = strokeTextCharacters;
 
-        objectError = computeStrokeTextBoundary((const staticTextObject_tPtr)  &staticTextObject,
-                                                (const alphabetCharacters_tPtr) characterList,
-                                                (const canvasDescriptor_tPtr)   canvasSize,
-                                                                               &strokeTextStringBoundary);
-
         for (strokeCharacterIndex = ((GRAPHICS_UINT)0); strokeCharacterIndex < strokeStringSize; strokeCharacterIndex++)
           {
           strokeCharacter = strokeTextCharacters->strokeTextString[strokeCharacterIndex];
@@ -808,28 +827,6 @@ graphicsError_t drawStrokeText(      HDC                             hdc,
                                                        (const objectColour_tPtr)&strokeTextCharacters->strokeTextColour,
                                                        (const strokeGraphPointBase_tPtr)strokeGraphBase);
 
-        // TEST : draw the text boundary
-#if (0)
-        strokeTextStringBoundary.topLeft.pointX = strokeTextCharacters->strokeTextAnchor.xAxisPoint * (screenCoordinates.screenRightX  - screenCoordinates.screenLeftX);
-        strokeTextStringBoundary.topLeft.pointY = strokeTextCharacters->strokeTextAnchor.yAxisPoint * (screenCoordinates.screenBottomY - screenCoordinates.screenTopY);
-
-        strokeTextStringBoundary.bottomRight.pointX = ((strokeTextStringBoundary.bottomRight.pointX * (screenCoordinates.screenRightX  - screenCoordinates.screenLeftX)) + strokeTextStringBoundary.topLeft.pointX);
-        strokeTextStringBoundary.bottomRight.pointY = ((strokeTextStringBoundary.bottomRight.pointY * (screenCoordinates.screenBottomY - screenCoordinates.screenTopY))  + strokeTextStringBoundary.topLeft.pointY);
-
-        RectF frameF(((GRAPHICS_FLOAT)strokeTextStringBoundary.topLeft.pointX),
-                     ((GRAPHICS_FLOAT)strokeTextStringBoundary.topLeft.pointY),
-                     ((GRAPHICS_FLOAT)(strokeTextStringBoundary.bottomRight.pointX - strokeTextStringBoundary.topLeft.pointX)),
-                     ((GRAPHICS_FLOAT)(strokeTextStringBoundary.bottomRight.pointY - strokeTextStringBoundary.topLeft.pointY)));
-
-        // Select the text colour
-        Pen pen(Color((BYTE)strokeGraphBase->passiveLineStrokeColour.opacity,
-                      (BYTE)strokeGraphBase->passiveLineStrokeColour.red,
-                      (BYTE)strokeGraphBase->passiveLineStrokeColour.green,
-                      (BYTE)strokeGraphBase->passiveLineStrokeColour.blue));
-
-        graphics.DrawRectangle(&pen, frameF);
-#endif
-
           // Move to the next character
           characterTrack.characterPlacementX = characterTrack.characterPlacementX + strokeTextCharacters->strokeTextCharacterWidth + strokeTextCharacters->strokeTextInterCharacterSpacing.xAxisPoint;
 
@@ -848,26 +845,29 @@ graphicsError_t drawStrokeText(      HDC                             hdc,
           deleteCharacter((alphabetCharacters_tPtr)normalisedReference);
           }
 
-#if (1)
-        strokeTextStringBoundary.topLeft.pointX = strokeTextCharacters->strokeTextAnchor.xAxisPoint * (screenCoordinates.screenRightX  - screenCoordinates.screenLeftX);
-        strokeTextStringBoundary.topLeft.pointY = strokeTextCharacters->strokeTextAnchor.yAxisPoint * (screenCoordinates.screenBottomY - screenCoordinates.screenTopY);
+        strokeTextStringBoundary->topLeft.pointX = strokeTextCharacters->strokeTextAnchor.xAxisPoint * (screenCoordinates.screenRightX  - screenCoordinates.screenLeftX);
+        strokeTextStringBoundary->topLeft.pointY = (strokeTextCharacters->strokeTextAnchor.yAxisPoint - strokeTextCharacters->strokeTextInterCharacterSpacing.yAxisPoint) * (screenCoordinates.screenBottomY - screenCoordinates.screenTopY);
 
-        strokeTextStringBoundary.bottomRight.pointX = (strokeTextStringBoundary.bottomRight.pointX  * (screenCoordinates.screenRightX  - screenCoordinates.screenLeftX)); //  + strokeTextStringBoundary.topLeft.pointX;
-        strokeTextStringBoundary.bottomRight.pointY = (strokeTextStringBoundary.bottomRight.pointY  * (screenCoordinates.screenBottomY - screenCoordinates.screenTopY)) + strokeTextStringBoundary.topLeft.pointY;
+        characterTrack.characterPlacementX = characterTrack.characterPlacementX + strokeTextCharacters->strokeTextCharacterWidth + strokeTextCharacters->strokeTextInterCharacterSpacing.xAxisPoint;
 
-        RectF frameF(((GRAPHICS_FLOAT)strokeTextStringBoundary.topLeft.pointX),
-                     ((GRAPHICS_FLOAT)strokeTextStringBoundary.topLeft.pointY),
-                     ((GRAPHICS_FLOAT)((strokeTextStringBoundary.bottomRight.pointX - strokeTextStringBoundary.topLeft.pointX) * (characterTrack.characterWidthX.xAxisPoint / characterTrack.characterWidthX.yAxisPoint))),
-                     ((GRAPHICS_FLOAT)(strokeTextStringBoundary.bottomRight.pointY  - strokeTextStringBoundary.topLeft.pointY)));
+        strokeTextStringBoundary->bottomRight.pointX = characterTrack.characterPlacementX * (screenCoordinates.screenRightX  - screenCoordinates.screenLeftX);
+        strokeTextStringBoundary->bottomRight.pointY = strokeTextStringBoundary->topLeft.pointY + ((strokeTextCharacters->strokeTextCharacterDepth + (((GRAPHICS_REAL)2.0) * strokeTextCharacters->strokeTextInterCharacterSpacing.yAxisPoint)) * (screenCoordinates.screenBottomY - screenCoordinates.screenTopY));
 
-        // Select the text colour
-        Pen pen(Color((BYTE)strokeGraphBase->passiveLineStrokeColour.opacity,
-                      (BYTE)strokeGraphBase->passiveLineStrokeColour.red,
-                      (BYTE)strokeGraphBase->passiveLineStrokeColour.green,
-                      (BYTE)strokeGraphBase->passiveLineStrokeColour.blue));
-
-        graphics.DrawRectangle(&pen, frameF);
-#endif
+        if (strokeTextCharacters->drawStrokeTextBoundary == true)
+          {
+          RectF frameF(((GRAPHICS_FLOAT)strokeTextStringBoundary->topLeft.pointX),
+                       ((GRAPHICS_FLOAT)strokeTextStringBoundary->topLeft.pointY),
+                       ((GRAPHICS_FLOAT)(strokeTextStringBoundary->bottomRight.pointX - strokeTextStringBoundary->topLeft.pointX)),
+                       ((GRAPHICS_FLOAT)(strokeTextStringBoundary->bottomRight.pointY - strokeTextStringBoundary->topLeft.pointY)));
+          
+          // Select the text colour
+          Pen pen(Color((BYTE)strokeGraphBase->passiveLineStrokeColour.opacity,
+                        (BYTE)strokeGraphBase->passiveLineStrokeColour.red,
+                        (BYTE)strokeGraphBase->passiveLineStrokeColour.green,
+                        (BYTE)strokeGraphBase->passiveLineStrokeColour.blue));
+          
+          graphics.DrawRectangle(&pen, frameF);
+          }
         }
 
       // Clear out all the allocated point structures
@@ -1225,111 +1225,62 @@ graphicsError_t instantiateRectangleObject(      rectangleObject_tPtr  *rectangl
 /******************************************************************************/
 /* computeStrokeTextBoundary() :                                              */
 /* - compute the virtual enclosing rectangle of a complete string of stroke   */
-/*   text characters                                                          */
+/*   text characters. The components of the calculation are defined in the    */
+/*   stroke text structure                                                    */
 /******************************************************************************/
 
-graphicsError_t computeStrokeTextBoundary(const staticTextObject_tPtr        staticTextObject,
-                                          const alphabetCharacters_tPtr      characterList,
-                                          const canvasDescriptor_tPtr        canvasSize,
-                                                characterExtentsReal_tPtr    strokeTextStringBoundary)
+graphicsError_t computeStrokeTextBoundary(const strokeTextStringDescriptor_tPtr strokeTextCharacters,
+                                          const canvasDescriptor_tPtr           canvasSize,
+                                                characterExtentsReal_tPtr       strokeTextStringBoundary)
   {
 /******************************************************************************/
 
-  size_t                  staticTextLength         = ((size_t)0);
-                                                   
-  GRAPHICS_UINT           strokeCharacter          = ((GRAPHICS_UINT)0),
-                          strokeCharacterIndex     = ((GRAPHICS_UINT)0);
-                                                   
-  GRAPHICS_UINT           boundX                   = ((GRAPHICS_UINT)0),
-                          boundY                   = ((GRAPHICS_UINT)0),
-                          spaceCount               = ((GRAPHICS_UINT)0),
-                          spaceWidth               = ((GRAPHICS_UINT)0), // width of a space character
-                          extentX                  = ((GRAPHICS_UINT)GRAPHICS_CHARACTER_MAXIMUM_TEST),
-                          extentY                  = ((GRAPHICS_UINT)GRAPHICS_CHARACTER_MAXIMUM_TEST),
-                          boundaryX                = ((GRAPHICS_UINT)0),
-                          boundaryY                = ((GRAPHICS_UINT)0);
+  GRAPHICS_UINT               strokeCharacterIndex     = ((GRAPHICS_UINT)0);
+                              
+  strokeCharacterTrack_t      characterTrack           = {
+                                                         ((GRAPHICS_REAL)0.0),
+                                                         ((GRAPHICS_REAL)0.0),
+                                                         { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) },
+                                                         { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) }
+                                                         };
+                                                       
+  size_t                      strokeStringSize         = ((size_t)0);
 
-  singlePoint_t           textSpacing              = { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) }; // inter-character gap width
-                 
-  alphabetCharacters_tPtr strokeCharacterReference = nullptr;
-
-  graphicsError_t         objectError              = GRAPHICS_NO_ERROR;
+  graphicsError_t             objectError              = GRAPHICS_NO_ERROR;
 
 /******************************************************************************/
 
-  if ((staticTextObject != nullptr) && (characterList            != nullptr) && 
-      (canvasSize       != nullptr) && (strokeTextStringBoundary != nullptr))
+  if ((strokeTextCharacters != nullptr) && (canvasSize!= nullptr))
     {
-    if ((staticTextObject->staticText != nullptr) && (staticTextObject->staticText->strokeTextString != nullptr))
+    if ((strokeStringSize = wcslen(strokeTextCharacters->strokeTextString)) != ((size_t)0))
       {
-      textSpacing = staticTextObject->staticText->strokeTextInterCharacterSpacing;
+      // Initialise the screen position for stroke text placement
+      characterTrack.characterPlacementX = strokeTextCharacters->strokeTextAnchor.xAxisPoint;
+      characterTrack.characterPlacementY = strokeTextCharacters->strokeTextAnchor.yAxisPoint;
 
-      if ((staticTextLength = wcslen(staticTextObject->staticText->strokeTextString)) > ((size_t)GRAPHICS_WCHAR_EOS_LENGTH))
+      for (strokeCharacterIndex = ((GRAPHICS_UINT)0); strokeCharacterIndex < strokeStringSize; strokeCharacterIndex++)
         {
-        // Compute the bounding rectangle for the static text string
-        for (strokeCharacterIndex = ((GRAPHICS_UINT)0); strokeCharacterIndex < staticTextLength; strokeCharacterIndex++)
-          {
-          strokeCharacter = (GRAPHICS_UINT)((GRAPHICS_CHAR)staticTextObject->staticText->strokeTextString[strokeCharacterIndex]);
-          
-          objectError = fetchCharacterReference( strokeCharacter,
-                                                 characterList,
-                                                &strokeCharacterReference);
-
-          // Space size will be calculated as an average of other character sizes. If the string 
-          // is ALL spaces then the space size will default to some fraction of the original 
-          // character grid size.
-          if (strokeCharacterReference->characterNumber == ALPHABET_ASCII_SPACE)
-            {
-            spaceCount = spaceCount + ((GRAPHICS_UINT)1);
-            }
-          else
-            {
-            // "Box" the absolute maximum and minimum character dimensions
-            extentX = (GRAPHICS_UINT)abs(((GRAPHICS_INT)strokeCharacterReference->characterExtents.bottomRight.pointX) - ((GRAPHICS_INT)strokeCharacterReference->characterExtents.topLeft.pointX));
-            extentY = (GRAPHICS_UINT)abs(((GRAPHICS_INT)strokeCharacterReference->characterExtents.bottomRight.pointY) - ((GRAPHICS_INT)strokeCharacterReference->characterExtents.topLeft.pointY));
-
-            if (extentX > boundX)
-              {
-              boundX = extentX;
-              }
-
-            if (extentY > boundY)
-              {
-              boundY = extentY;
-              }
-
-            // Build the boundary width by summing the x-bounds
-            boundaryX = boundaryX + boundX;
-
-            // Build the boundary depth by taking the biggest value
-            if (boundY > boundaryY)
-              {
-              boundaryY = boundY;
-              }
-            }
-          }
-
-        // Make room for space(s)
-        if (spaceCount != ((GRAPHICS_UINT)0))
-          {
-          // Err on the side of caution
-          spaceWidth = (GRAPHICS_UINT)ceil(((GRAPHICS_REAL)boundaryX) / ((GRAPHICS_REAL)staticTextLength));
-        
-          boundaryX = boundaryX + (spaceWidth * spaceCount);
-          }
-        
-        // Add the inter-character spacing width
-        boundaryX = boundaryX + (GRAPHICS_UINT)(textSpacing.xAxisPoint * (canvasSize->right - canvasSize->left) * ((GRAPHICS_REAL)staticTextLength));
-
-        // Finally return the text boundary - the 'topLeft' coordinate is deliberately left as { x == 0.0, y == 0.0 }
-        strokeTextStringBoundary->bottomRight.pointX = ((GRAPHICS_REAL)boundaryX) / (canvasSize->right  - canvasSize->left);
-        strokeTextStringBoundary->bottomRight.pointY = ((GRAPHICS_REAL)boundaryY) / (canvasSize->bottom - canvasSize->top);
+        // Move to the next character
+        characterTrack.characterPlacementX = characterTrack.characterPlacementX + strokeTextCharacters->strokeTextCharacterWidth + strokeTextCharacters->strokeTextInterCharacterSpacing.xAxisPoint;
         }
-      else
-        {
-        objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
-        }
-      }
+
+      // Return the unscaled "raw" top-left boundary points
+      strokeTextStringBoundary->topLeftRaw.pointX = strokeTextCharacters->strokeTextAnchor.xAxisPoint;
+      strokeTextStringBoundary->topLeftRaw.pointY = strokeTextCharacters->strokeTextAnchor.yAxisPoint - strokeTextCharacters->strokeTextInterCharacterSpacing.yAxisPoint;
+
+      // Return the scaled "cooked" boundary points
+      strokeTextStringBoundary->topLeft.pointX = strokeTextCharacters->strokeTextAnchor.xAxisPoint * (canvasSize->right - canvasSize->left);
+      strokeTextStringBoundary->topLeft.pointY = (strokeTextCharacters->strokeTextAnchor.yAxisPoint - strokeTextCharacters->strokeTextInterCharacterSpacing.yAxisPoint) * (canvasSize->bottom - canvasSize->top);
+
+      characterTrack.characterPlacementX = characterTrack.characterPlacementX + strokeTextCharacters->strokeTextCharacterWidth + strokeTextCharacters->strokeTextInterCharacterSpacing.xAxisPoint;
+
+      strokeTextStringBoundary->bottomRight.pointX = characterTrack.characterPlacementX * (canvasSize->right  - canvasSize->left);
+      strokeTextStringBoundary->bottomRight.pointY = strokeTextStringBoundary->topLeft.pointY + ((strokeTextCharacters->strokeTextCharacterDepth + (((GRAPHICS_REAL)2.0) * strokeTextCharacters->strokeTextInterCharacterSpacing.yAxisPoint)) * (canvasSize->bottom - canvasSize->top));
+
+      // Return the unscaled "raw" botton-right boundary points
+      strokeTextStringBoundary->bottomRightRaw.pointX = characterTrack.characterPlacementX;
+      strokeTextStringBoundary->bottomRightRaw.pointY = strokeTextStringBoundary->topLeftRaw.pointY + ((strokeTextCharacters->strokeTextCharacterDepth + (((GRAPHICS_REAL)2.0) * strokeTextCharacters->strokeTextInterCharacterSpacing.yAxisPoint)));
+      }          
     else
       {
       objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
@@ -1355,9 +1306,9 @@ graphicsError_t computeStrokeTextBoundary(const staticTextObject_tPtr        sta
 /*   revisited if the chain is modified                                       */
 /******************************************************************************/
 
-graphicsError_t computeCompositeObjectBoundary(      guiObjectHoldingRing_tPtr    guObjectHoldingRingRoot,
-                                               const alphabetCharacters_tPtr      characterList,
-                                               const canvasDescriptor_tPtr        canvasSize)
+graphicsError_t computeCompositeObjectBoundary(      guiObjectHoldingRing_tPtr guObjectHoldingRingRoot,
+                                               const alphabetCharacters_tPtr   characterList,
+                                               const canvasDescriptor_tPtr     canvasSize)
   {
 /******************************************************************************/
 
@@ -1383,6 +1334,25 @@ graphicsError_t computeCompositeObjectBoundary(      guiObjectHoldingRing_tPtr  
 
   alphabetCharacters_tPtr strokeCharacterReference = nullptr;
   commonObject_tPtr       guiRingRoot              = nullptr;
+
+  characterExtentsReal_t  textStringBoundary       = {
+                                                       {
+                                                       ((GRAPHICS_REAL)0.0),
+                                                       ((GRAPHICS_REAL)0.0)
+                                                       },
+                                                       {
+                                                       ((GRAPHICS_REAL)0.0),
+                                                       ((GRAPHICS_REAL)0.0)
+                                                       },
+                                                       {
+                                                       ((GRAPHICS_REAL)0.0),
+                                                       ((GRAPHICS_REAL)0.0)
+                                                       },
+                                                       {
+                                                       ((GRAPHICS_REAL)0.0),
+                                                       ((GRAPHICS_REAL)0.0)
+                                                       }
+                                                     };
 
   graphicsError_t         objectError              = GRAPHICS_NO_ERROR;
 
@@ -1419,98 +1389,34 @@ graphicsError_t computeCompositeObjectBoundary(      guiObjectHoldingRing_tPtr  
 
         case GRAPHICS_OBJECT_TYPE_STATIC_TEXT : if ((((staticTextObject_tPtr)guiRingRoot)->staticText != nullptr) && (((staticTextObject_tPtr)guiRingRoot)->staticText->strokeTextString != nullptr))
                                                   {
-                                                  textSpacing = ((staticTextObject_tPtr)guiRingRoot)->staticText->strokeTextInterCharacterSpacing;
-
-                                                  if ((staticTextLength = wcslen(((staticTextObject_tPtr)guiRingRoot)->staticText->strokeTextString)) > ((size_t)GRAPHICS_WCHAR_EOS_LENGTH))
+                                                  if ((objectError = computeStrokeTextBoundary((const strokeTextStringDescriptor_tPtr)((staticTextObject_tPtr)guiRingRoot)->staticText,
+                                                                                               (const canvasDescriptor_tPtr)canvasSize,
+                                                                                                                            &textStringBoundary)) == GRAPHICS_NO_ERROR)
                                                     {
-                                                    // Compute the bounding rectangle for the static text string
-                                                    for (strokeCharacterIndex = ((GRAPHICS_UINT)0); strokeCharacterIndex < staticTextLength; strokeCharacterIndex++)
-                                                      {
-                                                      strokeCharacter = (GRAPHICS_UINT)((GRAPHICS_CHAR)(((staticTextObject_tPtr)guiRingRoot)->staticText->strokeTextString[strokeCharacterIndex]));
-                                                      
-                                                      objectError = fetchCharacterReference( strokeCharacter,
-                                                                                             characterList,
-                                                                                            &strokeCharacterReference);
-
-                                                      // Space size will be calculated as an average of other character sizes. If the string 
-                                                      // is ALL spaces then the space size will default to some fraction of the original 
-                                                      // character grid size.
-                                                      if (strokeCharacterReference->characterNumber == ALPHABET_ASCII_SPACE)
-                                                        {
-                                                        spaceCount = spaceCount + ((GRAPHICS_UINT)1);
-                                                        }
-                                                      else
-                                                        {
-                                                        // "Box" the absolute maximum and minimum character dimensions
-                                                        extentX = (GRAPHICS_UINT)abs(((GRAPHICS_INT)strokeCharacterReference->characterExtents.bottomRight.pointX) - ((GRAPHICS_INT)strokeCharacterReference->characterExtents.topLeft.pointX)),
-                                                        extentY = (GRAPHICS_UINT)abs(((GRAPHICS_INT)strokeCharacterReference->characterExtents.bottomRight.pointY) - ((GRAPHICS_INT)strokeCharacterReference->characterExtents.topLeft.pointY));
-
-                                                        if (extentX > boundX)
-                                                          {
-                                                          boundX = extentX;
-                                                          }
-
-                                                        if (extentY > boundY)
-                                                          {
-                                                          boundY = extentY;
-                                                          }
-
-                                                        // Build the boundary width by summing the x-bounds
-                                                        boundaryX = boundaryX + boundX;
-
-                                                        // Build the boundary depth by taking the biggest value
-                                                        if (boundY > boundaryY)
-                                                          {
-                                                          boundaryY = boundY;
-                                                          }
-                                                        }
-                                                      }
-
-                                                    // Make room for space(s)
-                                                    if (spaceCount != ((GRAPHICS_UINT)0))
-                                                      {
-                                                      // Err on the side of caution
-                                                      spaceWidth = (GRAPHICS_UINT)ceil(((GRAPHICS_REAL)boundaryX) / ((GRAPHICS_REAL)staticTextLength));
-
-                                                      boundaryX = boundaryX + (spaceWidth * spaceCount);
-                                                      }
-
-                                                    // Add the inter-character spacing width
-                                                    boundaryX = boundaryX + (GRAPHICS_UINT)(textSpacing.xAxisPoint * (canvasSize->right - canvasSize->left) * ((GRAPHICS_REAL)staticTextLength));
-
-                                                    // Finally scale the boundaries and add the anchor points for x- and y-top-left and 
-                                                    // bottom-right coordinates
-                                                    topLeftX = ((staticTextObject_tPtr)guiRingRoot)->staticText->strokeTextAnchor.xAxisPoint;
-                                                    topLeftY = ((staticTextObject_tPtr)guiRingRoot)->staticText->strokeTextAnchor.yAxisPoint;
-
-                                                    bottomRightX = topLeftX + (((GRAPHICS_REAL)boundaryX) / (canvasSize->right  - canvasSize->left));
-                                                    bottomRightY = topLeftY + (((GRAPHICS_REAL)boundaryY) / (canvasSize->bottom - canvasSize->top));
-
                                                     // Compare with the current boundaries and update them if necessary
-                                                    if (topLeftX < guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.leftX)
+                                                    if (textStringBoundary.topLeftRaw.pointX < guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.leftX)
                                                       {
-                                                      guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.leftX = topLeftX;
+                                                      guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.leftX = textStringBoundary.topLeftRaw.pointX;
                                                       }
                                                   
-                                                    if (bottomRightX > guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.rightX)
+                                                    if (textStringBoundary.bottomRightRaw.pointX > guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.rightX)
                                                       {
-                                                      guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.rightX = bottomRightX;
+                                                      guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.rightX = textStringBoundary.bottomRightRaw.pointX;
                                                       }
                                                   
-                                                    if (topLeftY < guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.topY)
+                                                    if (textStringBoundary.topLeftRaw.pointY < guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.topY)
                                                       {
-                                                      guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.topY = topLeftY;
+                                                      guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.topY = textStringBoundary.topLeftRaw.pointY;
                                                       }
                                                   
-                                                    if (bottomRightY > guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.bottomY)
+                                                    if (textStringBoundary.bottomRightRaw.pointY > guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.bottomY)
                                                       {
-                                                      guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.bottomY = bottomRightY;
+                                                      guObjectHoldingRingRoot->activeObject.activeRegion.rectangularBoundary.bottomY = textStringBoundary.bottomRightRaw.pointY;
                                                       }
                                                     }
                                                   else
                                                     {
-                                                    objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
-                                                    break;
+                                                    objectError = GRAPHICS_OBJECT_FUNCTION_ERROR;
                                                     }
                                                   }
                                                 else
@@ -1518,6 +1424,7 @@ graphicsError_t computeCompositeObjectBoundary(      guiObjectHoldingRing_tPtr  
                                                   objectError = GRAPHICS_OBJECT_INSTANTIATION_ERROR;
                                                   break;
                                                   }
+
                                                 break;
 
         default                               : objectError = GRAPHICS_OBJECT_TYPE_ERROR;

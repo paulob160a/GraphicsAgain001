@@ -610,6 +610,9 @@ extern guiObjectHoldingRing_tPtr    guiObjectHoldingRingFreePtr;
 // Headline Text : 
 extern strokeTextStringDescriptor_t headlineString;
 extern objectColour_t               headlineColour;
+
+// Rectangle coordinates for a string's boundary
+extern  characterExtentsReal_t      strokeTextStringBoundary;
 // Rectangle 1 : 
 #pragma pack(push,1)
 extern rectangleObject_tPtr         rectangleObjectOne;
@@ -673,14 +676,13 @@ extern graphicsError_t addGuiObjectToHoldingRing(guiObjectHoldingRing_tPtr  inse
 extern graphicsError_t addGuiObjectToGuiChain(GRAPHICS_VOID_PTR newGuiObject,
                                               GRAPHICS_VOID_PTR lastGuiObject);
 
-extern graphicsError_t computeStrokeTextBoundary(const staticTextObject_tPtr        staticTextObject,
-                                                 const alphabetCharacters_tPtr      characterList,
-                                                 const canvasDescriptor_tPtr        canvasSize,
-                                                       characterExtentsReal_tPtr    strokeTextStringBoundary);
+extern graphicsError_t computeStrokeTextBoundary(const strokeTextStringDescriptor_tPtr strokeTextCharacters,
+                                                 const canvasDescriptor_tPtr           canvasSize,
+                                                       characterExtentsReal_tPtr       strokeTextStringBoundary);
 
-extern graphicsError_t computeCompositeObjectBoundary(      guiObjectHoldingRing_tPtr    objectHoldingRingRoot,
-                                                      const alphabetCharacters_tPtr      characterList,
-                                                      const canvasDescriptor_tPtr        canvasSize);
+extern graphicsError_t computeCompositeObjectBoundary(      guiObjectHoldingRing_tPtr objectHoldingRingRoot,
+                                                      const alphabetCharacters_tPtr   characterList,
+                                                      const canvasDescriptor_tPtr     canvasSize);
 
 extern graphicsError_t guiDrawRectangle(HDC                 hdc,
                                         commonObject_tPtr   graphicsObject,
@@ -725,7 +727,8 @@ extern graphicsError_t drawStrokeText(      HDC                             hdc,
                                             alphabetCharacters_tPtr         characterList,
                                       const strokeFrame_tPtr                characterFrame,
                                       const canvasDescriptor_tPtr           canvasSize,
-                                      const strokeGraphPointBase_tPtr       strokeGraphBase);
+                                      const strokeGraphPointBase_tPtr       strokeGraphBase,
+                                            characterExtentsReal_tPtr       strokeTextStringBoundary);
 
 extern graphicsError_t drawStrokeCharacter(      HDC                          hdc,
                                            const GRAPHICS_UINT                strokeCharacter,
