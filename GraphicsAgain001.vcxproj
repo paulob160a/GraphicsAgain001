@@ -111,6 +111,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BrowseInformation>true</BrowseInformation>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,6 +142,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="GraphicsAgain001.h" />
     <ClInclude Include="GraphicsAgainCaption.h" />
+    <ClInclude Include="GraphicsAgainGUIObjects.h" />
     <ClInclude Include="GraphicsAgainUtilities.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="StrokeGraphicsAlphabet.h" />
@@ -152,6 +154,7 @@
     <ClCompile Include="ar19937.cpp" />
     <ClCompile Include="GraphicsAgain001.cpp" />
     <ClCompile Include="GraphicsAgainAlphabet.cpp" />
+    <ClCompile Include="GraphicsAgainGUIObjects.cpp" />
     <ClCompile Include="GraphicsAgainUtilities.cpp" />
     <ClCompile Include="GraphicsObjectDetection.cpp" />
     <ClCompile Include="StrokeGraphicsListHandlers.cpp" />

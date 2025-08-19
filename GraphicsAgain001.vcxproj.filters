@@ -45,6 +45,9 @@
     <ClInclude Include="StrokeGraphicsListHandlers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GraphicsAgainGUIObjects.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GraphicsAgain001.cpp">
@@ -63,6 +66,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StrokeGraphicsListHandlers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsAgainGUIObjects.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

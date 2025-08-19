@@ -16,6 +16,7 @@
 #include <gdiplus.h>
 #include "StrokeGraphicsTypes.h"
 #include "StrokeGraphicsAlphabet.h"
+#include "GraphicsAgainGUIObjects.h"
 //#include "GraphicsAgainUtilities.h"
 
 /******************************************************************************/
@@ -64,241 +65,6 @@ using namespace Gdiplus;
 #define GRAPHICS_RECTANGLE_ONE_TEXT        L" Graphics "
 
 /******************************************************************************/
-
-// Ring Objects :
-#define GRAPHICS_RING_OUTPUT_WSTR_LENGTH      (256)
-                                             
-#define GRAPHICS_OBJECT_CAPTION_WSTR          L"GUI Graphics Development"
-#define GRAPHICS_OBJECT_TYPE_NONE_WSTR        L"GRAPHICS_OBJECT_TYPE_NONE"
-#define GRAPHICS_OBJECT_TYPE_RECTANGLE_WSTR   L"GRAPHICS_OBJECT_TYPE_RECTANGLE"
-#define GRAPHICS_OBJECT_TYPE_STATIC_TEXT_WSTR L"GRAPHICS_OBJECT_TYPE_STATIC_TEXT"
-#define GRAPHICS_OBJECT_TYPE_UNKNOWN_WSTR     L"GRAPHICS_OBJECT_TYPE_UNKNOWN_STR"
-
-#define GRAPHICS_OBJECT_TYPE_CODE             (0x0FEDC000)
-
-typedef enum graphicsObjectType_tTag
-  {
-  GRAPHICS_OBJECT_TYPE_NONE        = GRAPHICS_OBJECT_TYPE_CODE,
-  GRAPHICS_OBJECT_TYPE_INDEX       = (GRAPHICS_OBJECT_TYPE_NONE        + 0x00000001),
-  GRAPHICS_OBJECT_TYPE_RECTANGLE   = (GRAPHICS_OBJECT_TYPE_INDEX       + 0x00000001),
-  GRAPHICS_OBJECT_TYPE_OCTAGON     = (GRAPHICS_OBJECT_TYPE_RECTANGLE   + 0x00000001),
-  GRAPHICS_OBJECT_TYPE_HEXAGON     = (GRAPHICS_OBJECT_TYPE_OCTAGON     + 0x00000001),
-  GRAPHICS_OBJECT_TYPE_RANDOM      = (GRAPHICS_OBJECT_TYPE_HEXAGON     + 0x00000001),
-  GRAPHICS_OBJECT_TYPE_STATIC_TEXT = (GRAPHICS_OBJECT_TYPE_RANDOM      + 0x00000001),
-  GRAPHICS_OBJECT_TYPE_COMPOSITE   = (GRAPHICS_OBJECT_TYPE_STATIC_TEXT + 0x00000001), // complex object tree root
-  GRAPHICS_OBJECT_TYPE_UNKNOWN     = (GRAPHICS_OBJECT_TYPE_COMPOSITE   + 0x00000001),
-  GRAPHICS_OBJECT_TYPES            = (GRAPHICS_OBJECT_TYPE_UNKNOWN     + 0x00000001)
-  } graphicsObjectType_t, *graphicsObjectType_tPtr;
-
-typedef struct canvasDescriptor_tTag
-  {
-  GRAPHICS_REAL left;
-  GRAPHICS_REAL top;
-  GRAPHICS_REAL right;
-  GRAPHICS_REAL bottom;
-  GRAPHICS_REAL width;
-  GRAPHICS_REAL height;
-  GRAPHICS_REAL centreX;
-  GRAPHICS_REAL centreY;
-  } canvasDescriptor_t, *canvasDescriptor_tPtr;
-
-/******************************************************************************/
-/* Colour Palette : the definitions and their enumerations must be kept in    */
-/*                  lock-step. New colour definitions must be added to the    */
-/*                  next numeral in the enumeration list                      */
-/******************************************************************************/
-
-// Have to appeal to the power of 'C' to extract the colour values!
-
-#define SELECT_BYTE_0                                       ((GRAPHICS_UINT)0)
-#define UNSIGNED_INT_MASK_BYTE_0                            ((GRAPHICS_UINT)0x000000ff)
-#define UNSIGNED_INT_SHIFT_BYTE_0                           (0)
-    
-#define SELECT_BYTE_1                                       ((GRAPHICS_UINT)1)
-#define UNSIGNED_INT_MASK_BYTE_1                            ((GRAPHICS_UINT)0x0000ff00)
-#define UNSIGNED_INT_SHIFT_BYTE_1                           (8)
-                         
-#define SELECT_BYTE_2                                       ((GRAPHICS_UINT)2)
-#define UNSIGNED_INT_MASK_BYTE_2                            ((GRAPHICS_UINT)0x00ff0000)
-#define UNSIGNED_INT_SHIFT_BYTE_2                           (UNSIGNED_INT_SHIFT_BYTE_1 << 1)
-                                                            
-#define SELECT_BYTE_3                                       ((GRAPHICS_UINT)3)
-#define UNSIGNED_INT_MASK_BYTE_3                            ((GRAPHICS_UINT)0xff000000)
-#define UNSIGNED_INT_SHIFT_BYTE_3                           ((UNSIGNED_INT_SHIFT_BYTE_1 << 1) + UNSIGNED_INT_SHIFT_BYTE_1)
-
-#define EXTRACT_COLOUR_FIELD_BYTE(colourField,selectedByte,requestedByte) { switch(selectedByte) \
-                                                                              { \
-                                                                              case SELECT_BYTE_0 : *requestedByte = (GRAPHICS_BYTE)((((GRAPHICS_UINT)colourField) & UNSIGNED_INT_MASK_BYTE_0) >> UNSIGNED_INT_SHIFT_BYTE_0); \
-                                                                                                   break; \
-                                                                              case SELECT_BYTE_1 : *requestedByte = (GRAPHICS_BYTE)((((GRAPHICS_UINT)colourField) & UNSIGNED_INT_MASK_BYTE_1) >> UNSIGNED_INT_SHIFT_BYTE_1); \
-                                                                                                   break; \
-                                                                              case SELECT_BYTE_2 : *requestedByte = (GRAPHICS_BYTE)((((GRAPHICS_UINT)colourField) & UNSIGNED_INT_MASK_BYTE_2) >> UNSIGNED_INT_SHIFT_BYTE_2); \
-                                                                                                   break; \
-                                                                              case SELECT_BYTE_3 : *requestedByte = (GRAPHICS_BYTE)((((GRAPHICS_UINT)colourField) & UNSIGNED_INT_MASK_BYTE_3) >> UNSIGNED_INT_SHIFT_BYTE_3); \
-                                                                                                   break; \
-                                                                              default            : *requestedByte = ((GRAPHICS_BYTE)0); \
-                                                                                                   break; \
-                                                                              } \
-                                                                          }
-#define FULL_COLOUR_CHANNEL    ((BYTE)0xff)
-#define NULL_COLOUR_CHANNEL    ((BYTE)0x00)
-                               
-#define FULL_OPAQUE_CHANNEL    ((BYTE)0xff)
-#define NULL_OPAQUE_CHANNEL    ((BYTE)0x00)
-                               
-#define NO_COLOUR_PEN          ((BYTE)0x00), \
-                               ((BYTE)0x00), \
-                               ((BYTE)0x00), \
-                               ((BYTE)0x00) // transparent pen
-
-#define NO_COLOUR_PEN_CODE     ((GRAPHICS_UINT)((NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                 NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                 NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                 NULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-
-#define DARK_GREEN_PEN         ((BYTE)0xFF), \
-                               ((BYTE)0x16), \
-                               ((BYTE)0x96), \
-                               ((BYTE)0x19) // opaque DARK GREEN pen
-                               
-#define DARK_GREEN_PEN_CODE    ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (((BYTE)0x16)        << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (((BYTE)0x96)        << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (((BYTE)0x19)        << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-                               
-#define BRIGHT_YELLOW_PEN      ((BYTE)0xFF), \
-                               ((BYTE)0xFF), \
-                               ((BYTE)0xFF), \
-                               ((BYTE)0x00) // opaque BRIGHT YELLOW pen
-
-#define BRIGHT_YELLON_PEN_CODE ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (((BYTE)0xFF)        << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (((BYTE)0xFF)        << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (((BYTE)0x00)        << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-
-#define LIGHT_BLUE_PEN         ((BYTE)0xFF), \
-                               ((BYTE)0x84), \
-                               ((BYTE)0xBC), \
-                               ((BYTE)0xEF) // opaque LIGHT BLUE pen
-                               
-#define LIGHT_BLUE_PEN_CODE    ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (((BYTE)0x84)        << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (((BYTE)0xBC)        << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (((BYTE)0xEF)        << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-                               
-#define BLUE_PEN               FULL_OPAQUE_CHANNEL, \
-                               NULL_COLOUR_CHANNEL, \
-                               NULL_COLOUR_CHANNEL, \
-                               FULL_COLOUR_CHANNEL  // opaque BLUE pen
-                               
-#define BLUE_PEN_CODE          ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (FULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-                               
-#define GREEN_PEN              FULL_OPAQUE_CHANNEL, \
-                               NULL_COLOUR_CHANNEL, \
-                               FULL_COLOUR_CHANNEL, \
-                               NULL_COLOUR_CHANNEL  // opaque GREEN pen 
-                               
-#define GREEN_PEN_CODE         ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (NULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-                               
-#define RED_PEN                FULL_OPAQUE_CHANNEL, \
-                               FULL_COLOUR_CHANNEL, \
-                               NULL_COLOUR_CHANNEL, \
-                               NULL_COLOUR_CHANNEL  // opaque RED pen
-                               
-#define RED_PEN_CODE           ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (NULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-
-#define CYAN_PEN               FULL_OPAQUE_CHANNEL, \
-                               NULL_COLOUR_CHANNEL, \
-                               FULL_COLOUR_CHANNEL, \
-                               FULL_COLOUR_CHANNEL  // opaque CYAN pen
-                               
-#define CYAN_PEN_CODE          ((GRAPHICS_UINT) ((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                 (NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                 (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                 (FULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-                               
-#define MAGENTA_PEN            FULL_OPAQUE_CHANNEL, \
-                               FULL_COLOUR_CHANNEL, \
-                               NULL_COLOUR_CHANNEL, \
-                               FULL_COLOUR_CHANNEL  // opaque MAGENTA pen
-                            
-#define MAGENTA_PEN_CODE       ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (FULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-                               
-#define YELLOW_PEN              FULL_OPAQUE_CHANNEL, \
-                                FULL_COLOUR_CHANNEL, \
-                                FULL_COLOUR_CHANNEL, \
-                                NULL_COLOUR_CHANNEL  // opaque YELLOW pen
-                               
-#define YELLOW_PEN_CODE        ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (NULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-                               
-#define BLACK_PEN_OPAQUE        FULL_OPAQUE_CHANNEL, \
-                                NULL_COLOUR_CHANNEL, \
-                                NULL_COLOUR_CHANNEL, \
-                                NULL_COLOUR_CHANNEL  // opaque BLACK pen
-                               
-#define BLACK_PEN_CODE         ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                (NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                (NULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                (NULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-                               
-#define WHITE_PEN_OPAQUE        FULL_OPAQUE_CHANNEL, \
-                                FULL_COLOUR_CHANNEL, \
-                                FULL_COLOUR_CHANNEL, \
-                                FULL_COLOUR_CHANNEL  // opaque WHITE pen
-                               
-#define WHITE_PEN_OPAQUE_CODE   ((GRAPHICS_UINT)((FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_0) | \
-                                                 (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_1) | \
-                                                 (FULL_OPAQUE_CHANNEL << UNSIGNED_INT_SHIFT_BYTE_2) | \
-                                                 (FULL_OPAQUE_CHANNEL << (UNSIGNED_INT_SHIFT_BYTE_1 + UNSIGNED_INT_SHIFT_BYTE_2))))
-
-/* The stroke graph frame background is grey... */
-#define FRAME_BACKGROUND_COLOUR_RED           (0xa5)
-#define FRAME_BACKGROUND_COLOUR_GREEN         (0xa6)
-#define FRAME_BACKGROUND_COLOUR_BLUE          (0xa8)
-#define FRAME_BACKGROUND_COLOUR_A             (0xff)
-
-typedef enum lineSegmentColours_tTag
-  {
-  LINE_SEGMENT_COLOUR_BLUE = 0,
-  LINE_SEGMENT_COLOUR_GREEN,
-  LINE_SEGMENT_COLOUR_RED,
-  LINE_SEGMENT_COLOUR_CYAN,
-  LINE_SEGMENT_COLOUR_MAGENTA,
-  LINE_SEGMENT_COLOUR_YELLOW,
-  LINE_SEGMENT_COLOUR_BLACK_OPAQUE,
-  LINE_SEGMENT_COLOUR_WHITE_OPAQUE,
-  LINE_SEGMENT_COLOUR_DARK_GREEN,
-  LINE_SEGMENT_COLOUR_BRIGHT_YELLOW,
-  LINE_SEGMENT_COLOUR_LIGHT_BLUE,
-  LINE_SEGMENT_COLOURS
-  } lineSegmentColours_t, *lineSegmentColours_tPtr;
-
-#pragma pack(push,1)
-typedef struct colourPalette_tTag
-  {
-  BYTE colourOpacity;
-  BYTE colourRedComponent;
-  BYTE colourGreenComponent;
-  BYTE colourBlueComponent;
-  } colourPalette_t, *colourPalette_tPtr;
-#pragma pack(pop)
-
-/******************************************************************************/
 /* The drawing object database containers and definitions :                   */
 /* - NOTES :                                                                  */
 /*      (i) the drawing surface (canvas )is normalised to :                   */
@@ -340,15 +106,6 @@ typedef struct commonObject_tTag
 
 #define GRAPHICS_SINGLE_POINT_COORDINATES (2)
 
-typedef struct rectangleDimensions_tTag
-  {
-  GRAPHICS_REAL leftX;
-  GRAPHICS_REAL topY;
-  GRAPHICS_REAL rightX;
-  GRAPHICS_REAL bottomY;
-  GRAPHICS_UINT lineWidth;
-  } rectangleDimensions_t, *rectangleDimensions_tPtr;
-
 typedef struct octagonDimensions_tTag
   {
   GRAPHICS_REAL leftX;     
@@ -380,6 +137,10 @@ typedef struct hexagonDimensions_tTag
   GRAPHICS_REAL outerMidRightX;
   GRAPHICS_REAL outerMidBottomY;
   } hexagonDimensions_t, *hexagonDimensions_tPtr;
+
+typedef struct radioButtonDimensions_tTag
+  {
+  } radioButtonDimensions_t, *radioButtonDimensions_tPtr;
 
 typedef struct randomDimensions_tTag
   {
@@ -465,81 +226,6 @@ typedef struct guiObjectHoldingRing_tTag
   } guiObjectHoldingRing_t, *guiObjectHoldingRing_tPtr;
 #pragma pack(pop)
 
-/******************************************************************************/
-/* GUI Object Size and Placement :                                            */
-/* - all of the dimensions are initially scaled by the default screen size.   */
-/*   This is recalculated as the window changes                               */
-/******************************************************************************/
-
-#define RECTANGLE_OBJECT_ONE_BASE_X      ((GRAPHICS_REAL)10.0)
-#define RECTANGLE_OBJECT_ONE_BASE_Y      ((GRAPHICS_REAL)10.0)
-                                        
-#define RECTANGLE_OBJECT_ONE_LEFT_X      (RECTANGLE_OBJECT_ONE_BASE_X / canvasSize.right)
-#define RECTANGLE_OBJECT_ONE_TOP_Y       (RECTANGLE_OBJECT_ONE_BASE_Y / canvasSize.bottom)
-#define RECTANGLE_OBJECT_ONE_RIGHT_X     ((RECTANGLE_OBJECT_ONE_BASE_X + 20.0) / canvasSize.right)
-#define RECTANGLE_OBJECT_ONE_BOTTOM_Y    ((RECTANGLE_OBJECT_ONE_BASE_Y + 20.0) / canvasSize.bottom)
-#define RECTANGLE_OBJECT_ONE_LINEWIDTH   ((GRAPHICS_UINT)3)
-                                         
-#define RECTANGLE_OBJECT_TWO_BASE_X      ((GRAPHICS_REAL)200.0)
-#define RECTANGLE_OBJECT_TWO_BASE_Y      ((GRAPHICS_REAL)50.0)
-                                         
-#define RECTANGLE_OBJECT_TWO_LEFT_X      (RECTANGLE_OBJECT_TWO_BASE_X / canvasSize.right)
-#define RECTANGLE_OBJECT_TWO_TOP_Y       (RECTANGLE_OBJECT_TWO_BASE_Y / canvasSize.bottom)
-#define RECTANGLE_OBJECT_TWO_RIGHT_X     ((RECTANGLE_OBJECT_TWO_BASE_X + 50.0) / canvasSize.right)
-#define RECTANGLE_OBJECT_TWO_BOTTOM_Y    ((RECTANGLE_OBJECT_TWO_BASE_Y + 50.0) / canvasSize.bottom)
-#define RECTANGLE_OBJECT_TWO_LINEWIDTH   ((GRAPHICS_UINT)2)
-                                         
-#define RECTANGLE_OBJECT_THREE_BASE_X    ((GRAPHICS_REAL)225.0)
-#define RECTANGLE_OBJECT_THREE_BASE_Y    ((GRAPHICS_REAL)25.0)
-                                         
-#define RECTANGLE_OBJECT_THREE_LEFT_X    (RECTANGLE_OBJECT_THREE_BASE_X / canvasSize.right)
-#define RECTANGLE_OBJECT_THREE_TOP_Y     (RECTANGLE_OBJECT_THREE_BASE_Y / canvasSize.bottom)
-#define RECTANGLE_OBJECT_THREE_RIGHT_X   ((RECTANGLE_OBJECT_THREE_BASE_X + 50.0) / canvasSize.right)
-#define RECTANGLE_OBJECT_THREE_BOTTOM_Y  ((RECTANGLE_OBJECT_THREE_BASE_Y + 50.0) / canvasSize.bottom)
-#define RECTANGLE_OBJECT_THREE_LINEWIDTH ((GRAPHICS_UINT)1)
-
-#define HEADLINE_BASE_X                  ((GRAPHICS_REAL)50.0)
-#define HEADLINE_BASE_Y                  ((GRAPHICS_REAL)100.0)
-
-#define HEADLINE_TEXT_ANCHOR_X           (HEADLINE_BASE_X / canvasSize.right)
-#define HEADLINE_TEXT_ANCHOR_Y           (HEADLINE_BASE_Y / canvasSize.bottom)
-
-#define HEADLINE_CHARACTER_WIDTH         ((GRAPHICS_REAL)(15.0 / canvasSize.right))
-#define HEADLINE_CHARACTER_DEPTH         ((GRAPHICS_REAL)(20.0 / canvasSize.bottom))
-
-#define HEADLINE_TEXT_WIDTH              (HEADLINE_CHARACTER_WIDTH * ((GRAPHICS_REAL)wcslen(GRAPHICS_STROKE_TEXT_HEADLINE))) + (HEADLINE_TEXT_DEPTH_SPACING * ((GRAPHICS_REAL)wcslen(GRAPHICS_STROKE_TEXT_HEADLINE))) // multiple characters 'x'
-#define HEADLINE_TEXT_DEPTH              HEADLINE_CHARACTER_DEPTH // single character 'y'
-#define HEADLINE_TEXT_WIDTH_SPACING      ((GRAPHICS_REAL)1.0)     // inter-character empty space
-#define HEADLINE_TEXT_DEPTH_SPACING      ((GRAPHICS_REAL)1.0)     // inter-character empty space
-
-#define HEADLINE_TEXT_WIDTH_X            (HEADLINE_TEXT_WIDTH / canvasSize.right)        
-#define HEADLINE_TEXT_DEPTH_Y            HEADLINE_TEXT_DEPTH        
-#define HEADLINE_TEXT_WIDTH_SPACING_X    (HEADLINE_TEXT_WIDTH_SPACING / canvasSize.right)
-#define HEADLINE_TEXT_DEPTH_SPACING_Y    (HEADLINE_TEXT_WIDTH_SPACING / canvasSize.bottom)
-
-#define HEADLINE_TEXT_LINEWIDTH          ((GRAPHICS_REAL)2.0)
-
-#pragma pack(push,1)
-typedef struct rectangleObject_tTag
-  {
-  graphicsObjectType_t   objectType;
-  graphicsObjectType_t   nextDrawingObjectType; // composite objects are simply chained
-  GRAPHICS_VOID_PTR      nextDrawingObject;
-  objectColour_t         rectangleColour;
-  rectangleDimensions_t  rectangleDimensions;
-  } rectangleObject_t,  *rectangleObject_tPtr;
-#pragma pack(pop)
-
-#pragma pack(push,1)
-typedef struct staticTextObject_tTag
-  {
-  graphicsObjectType_t            objectType;
-  graphicsObjectType_t            nextDrawingObjectType;
-  GRAPHICS_VOID_PTR               nextDrawingObject;
-  strokeTextStringDescriptor_tPtr staticText;
-  } staticTextObject_t, *staticTextObject_tPtr;
-#pragma pack(pop)
-
 // The MINIMAL space division of a character frame
 #define STROKE_FRAME_X_MINIMUM_POINTS_UINT ((GRAPHICS_UINT)3)
 #define STROKE_FRAME_Y_MINIMUM_POINTS_UINT ((GRAPHICS_UINT)3) 
@@ -607,48 +293,11 @@ extern guiObjectHoldingRing_tPtr    guiObjectHoldingRingBaseLink;
 extern guiObjectHoldingRing_tPtr    guiObjectHoldingRingCurrent;
 extern guiObjectHoldingRing_tPtr    guiObjectHoldingRingFreePtr;
 
-// Headline Text : 
-extern strokeTextStringDescriptor_t headlineString;
-extern objectColour_t               headlineColour;
-
-// Rectangle coordinates for a string's boundary
-extern  characterExtentsReal_t      strokeTextStringBoundary;
-// Rectangle 1 : 
-#pragma pack(push,1)
-extern rectangleObject_tPtr         rectangleObjectOne;
-#pragma pack(pop)                   
-extern rectangleDimensions_t        rectangleObjectOneDimensions;
-extern objectColour_t               rectangleObjectOneColour;
-#pragma pack(push,1)                
 extern graphicsActiveObject_t       rectangleObjectOneActiveBehaviour;
-#pragma pack(pop)                   
-                                    
-// Rectangle 1 Text :               
-#pragma pack(push,1)                
-extern staticTextObject_tPtr        rectangleOneText;               
-#pragma pack(pop)                   
-extern rectangleDimensions_t        rectangleOneTextDimensions;                   
-extern objectColour_t               rectangleOneTextColour;
-#pragma pack(push,1)                
 extern graphicsActiveObject_t       rectangleOneTextActiveBehaviour;
-#pragma pack(pop)                   
-                                    
-// Rectangle 2 :                    
-#pragma pack(push,1)                
-extern rectangleObject_tPtr         rectangleObjectTwo;
-#pragma pack(pop)                   
-extern rectangleDimensions_t        rectangleObjectTwoDimensions;
-extern objectColour_t               rectangleObjectTwoColour;
-#pragma pack(push,1)                
-extern graphicsActiveObject_t       rectangleObjectTwoActiveBehaviour;
-#pragma pack(pop)                   
-                                    
-// Rectangle 3 :                    
-#pragma pack(push,1)                
-extern rectangleObject_tPtr         rectangleObjectThree;
-#pragma pack(pop)                   
-extern rectangleDimensions_t        rectangleObjectThreeDimensions;
-extern objectColour_t               rectangleObjectThreeColour;
+extern graphicsActiveObject_t       rectangleObjectTwoActiveBehaviour; 
+
+extern graphicsActiveObject_t       radioButtonOneActiveBehaviour;
 
 /******************************************************************************/
 
@@ -675,6 +324,7 @@ extern graphicsError_t addGuiObjectToHoldingRing(guiObjectHoldingRing_tPtr  inse
 
 extern graphicsError_t addGuiObjectToGuiChain(GRAPHICS_VOID_PTR newGuiObject,
                                               GRAPHICS_VOID_PTR lastGuiObject);
+
 
 extern graphicsError_t computeStrokeTextBoundary(const strokeTextStringDescriptor_tPtr strokeTextCharacters,
                                                  const canvasDescriptor_tPtr           canvasSize,
@@ -703,6 +353,8 @@ extern graphicsError_t rectangleObjectOneHandler(GRAPHICS_VOID_PTR handlingMode)
 extern graphicsError_t rectangleObjectTwoHandler(GRAPHICS_VOID_PTR handlingMode);
 extern graphicsError_t rectangleObjectThreeHandler(GRAPHICS_VOID_PTR handlingMode);
 
+extern graphicsError_t radioButtonOneHandler(GRAPHICS_VOID_PTR handlingMode);
+
 extern graphicsError_t traverseHoldingRingObject(guiObjectHoldingRing_tPtr ringObjectBase);
 extern graphicsError_t printHoldingRingObject(guiObjectHoldingRing_tPtr ringObjectBase,
                                               GRAPHICS_WCHAR_PTR        objectOutput,
@@ -721,21 +373,6 @@ extern graphicsError_t buildCharacterStrokeGraph(strokeFrame_tPtr          chara
                                                  strokeGraphPointBase_tPtr strokeGraphBase);
 
 extern graphicsError_t deleteCharacterStrokeGraph(strokeGraphPointBase_tPtr  strokeGraphBase);
-
-extern graphicsError_t drawStrokeText(      HDC                             hdc,
-                                      const strokeTextStringDescriptor_tPtr strokeTextHeadlineCharacters,
-                                            alphabetCharacters_tPtr         characterList,
-                                      const strokeFrame_tPtr                characterFrame,
-                                      const canvasDescriptor_tPtr           canvasSize,
-                                      const strokeGraphPointBase_tPtr       strokeGraphBase,
-                                            characterExtentsReal_tPtr       strokeTextStringBoundary);
-
-extern graphicsError_t drawStrokeCharacter(      HDC                          hdc,
-                                           const GRAPHICS_UINT                strokeCharacter,
-                                                 alphabetCharacters_tPtr      characterList,
-                                           const strokeFrame_tPtr             characterFrame,
-                                           const canvasDescriptor_tPtr        canvasSize,
-                                           const strokeGraphPointBase_tPtr    strokeGraphBase);
 
 extern VOID            OnPaint(HDC                        hdc,
                                canvasDescriptor_t        *canvasSize,

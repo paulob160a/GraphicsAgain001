@@ -50,27 +50,33 @@ graphicsError_t detectMouseOverObject(const guiObjectHoldingRing_tPtr  guiObject
       // Is the ring element in use or just a holding node ?
       switch(ringPointer->linkObjectType)
         {
-        case GRAPHICS_OBJECT_TYPE_RECTANGLE : // Scale the boundaries - this assumes the canvas will never exceed dX = 0..32767, dY = 0..32767
-                                              boundaryLeftX   = (GRAPHICS_SHORT)(ringPointer->activeObject.activeRegion.rectangularBoundary.leftX   * canvasSize->width);
-                                              boundaryTopY    = (GRAPHICS_SHORT)(ringPointer->activeObject.activeRegion.rectangularBoundary.topY    * canvasSize->height);
-                                              boundaryRightX  = (GRAPHICS_SHORT)(ringPointer->activeObject.activeRegion.rectangularBoundary.rightX  * canvasSize->width);
-                                              boundaryBottomY = (GRAPHICS_SHORT)(ringPointer->activeObject.activeRegion.rectangularBoundary.bottomY * canvasSize->height);
-
-                                              // Test to see if the mouse is inside this boundary
-                                              if ((xPosition > boundaryLeftX) && (xPosition < boundaryRightX))
-                                                {
-                                                if ((yPosition > boundaryTopY) && (yPosition < boundaryBottomY))
-                                                  {
-                                                  *mouseOverObject = true;
-                                                  }
-                                                }
-
-                                              break;
+        case GRAPHICS_OBJECT_TYPE_RECTANGLE    : // Scale the boundaries - this assumes the canvas will never exceed dX = 0..32767, dY = 0..32767
+                                                 boundaryLeftX   = (GRAPHICS_SHORT)(ringPointer->activeObject.activeRegion.rectangularBoundary.leftX   * canvasSize->width);
+                                                 boundaryTopY    = (GRAPHICS_SHORT)(ringPointer->activeObject.activeRegion.rectangularBoundary.topY    * canvasSize->height);
+                                                 boundaryRightX  = (GRAPHICS_SHORT)(ringPointer->activeObject.activeRegion.rectangularBoundary.rightX  * canvasSize->width);
+                                                 boundaryBottomY = (GRAPHICS_SHORT)(ringPointer->activeObject.activeRegion.rectangularBoundary.bottomY * canvasSize->height);
+                                               
+                                                 // Test to see if the mouse is inside this boundary
+                                                 if ((xPosition > boundaryLeftX) && (xPosition < boundaryRightX))
+                                                   {
+                                                   if ((yPosition > boundaryTopY) && (yPosition < boundaryBottomY))
+                                                     {
+                                                     *mouseOverObject = true;
+                                                     }
+                                                   }
+                                               
+                                                 break;
         
-        case GRAPHICS_OBJECT_TYPE_NONE      : break;
-                                            
-        default                             : objectError = GRAPHICS_OBJECT_TYPE_ERROR;
-                                              break;
+        case GRAPHICS_OBJECT_TYPE_RADIO_BUTTON :
+                                                 break;
+
+        case GRAPHICS_OBJECT_TYPE_STATIC_TEXT  :
+                                                 break;
+
+        case GRAPHICS_OBJECT_TYPE_NONE         : break;
+                                              
+        default                                : objectError = GRAPHICS_OBJECT_TYPE_ERROR;
+                                                 break;
         }
       }
     else
@@ -107,16 +113,18 @@ bool testHoldingRingObjectType(graphicsObjectType_t objectType)
 
   switch(objectType)
     {
-    case GRAPHICS_OBJECT_TYPE_NONE        : [[fallthrough]]; // warning C26819 fallthrough is explicit
-    case GRAPHICS_OBJECT_TYPE_INDEX       : [[fallthrough]]; // warning C26819 fallthrough is explicit
-    case GRAPHICS_OBJECT_TYPE_RECTANGLE   : [[fallthrough]]; // warning C26819 fallthrough is explicit
-    case GRAPHICS_OBJECT_TYPE_OCTAGON     : [[fallthrough]]; // warning C26819 fallthrough is explicit
-    case GRAPHICS_OBJECT_TYPE_HEXAGON     : [[fallthrough]]; // warning C26819 fallthrough is explicit
-    case GRAPHICS_OBJECT_TYPE_RANDOM      : [[fallthrough]]; // warning C26819 fallthrough is explicit
-    case GRAPHICS_OBJECT_TYPE_STATIC_TEXT : [[fallthrough]]; // warning C26819 fallthrough is explicit
-    case GRAPHICS_OBJECT_TYPE_COMPOSITE   : [[fallthrough]]; // warning C26819 fallthrough is explicit
-    case GRAPHICS_OBJECT_TYPE_UNKNOWN     : break;
-    default                               : legalObjectError = false;
+    case GRAPHICS_OBJECT_TYPE_NONE         : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_INDEX        : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_RECTANGLE    : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_OCTAGON      : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_HEXAGON      : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_RANDOM       : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_CIRCULAR     : [[fallthrough]]; // warning C26819 fallthrough is explicit 
+    case GRAPHICS_OBJECT_TYPE_RADIO_BUTTON : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_STATIC_TEXT  : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_COMPOSITE    : [[fallthrough]]; // warning C26819 fallthrough is explicit
+    case GRAPHICS_OBJECT_TYPE_UNKNOWN      : break;
+    default                                : legalObjectError = false;
                                             break;
     }
 

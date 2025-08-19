@@ -276,21 +276,10 @@ int APIENTRY wWinMain(_In_     HINSTANCE hInstance,
                                                            GRAPHICS_OBJECT_NUMBERING_IMMEDIATE,
                                                            1);
 
-  //guiObjectHoldingRingBaseLink->numberOfRingLinkObjects = 1;
-
   // For now add two rectangles as proof-of-concept and development hints
   graphicsErrorState = instantiateRectangleObject(&rectangleObjectOne,
                                                    (const rectangleDimensions_t)rectangleObjectOneDimensions,
                                                    (const objectColour_t)rectangleObjectOneColour);
-  
-/* #pragma pack(push,1)
-extern staticTextObject_tPtr     rectangleOneText  ;               
-#pragma pack(pop)
-extern rectangleDimensions_t     rectangleOneTextDimensions;                   
-extern objectColour_t            rectangleOneTextColour;
-#pragma pack(push,1)
-extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
-#pragma pack(pop) */
 
   graphicsErrorState = instantiateStaticTextObject(&rectangleOneText,
                                                    (const strokeTextStringDescriptor_tPtr)&headlineString);
@@ -342,6 +331,28 @@ extern graphicsActiveObject_t    rectangleOneTextActiveBehaviour;
                                                       (const alphabetCharacters_tPtr) characterListRoot,
                                                       (const canvasDescriptor_tPtr)  &canvasSize);
 
+  // Assemble radiobutton one...
+#if (0)
+  graphicsErrorState = instantiateCircularObject(&radioButtonOnePush,
+                                                 (const circularObjectDescriptor_tPtr)&radioButtonOnePushDefinition);
+#endif
+
+  graphicsErrorState = instantiateRadioButtonObject(&radioButtonOne,
+                                                    (const radioButtonDescriptor_tPtr)&radioButtonOneDefinition,
+                                                    &radioButtonOnePush,
+                                                    (const circularObjectDescriptor_tPtr)&radioButtonOnePushDefinition,
+                                                    &radioButtonOneDetent,
+                                                    (const detentObjectDescriptor_tPtr)&radioButtonOnePushDetent);
+
+  // Instantiate a third holding ring object element attached to the second one
+  graphicsErrorState = addNewHoldingRingObject(&guiObjectHoldingRingCurrent,
+                                                GRAPHICS_OBJECT_NUMBERING_INCREMENTAL,
+                                                0);
+  
+  graphicsErrorState = addGuiObjectToHoldingRing(guiObjectHoldingRingCurrent,
+                                                 (GRAPHICS_VOID_PTR)radioButtonOne,
+                                                 &radioButtonOneActiveBehaviour,
+                                                 GRAPHICS_OBJECT_TYPE_RADIO_BUTTON);
 #if (0)
   graphicsErrorState = traverseHoldingRingObject( guiObjectHoldingRingBaseLink);
 #else
@@ -561,6 +572,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                           break;
         } */
 
+      case RADIO_BUTTON_EXPIRY_MESSAGE :
+                                         break;
+
       case WM_KEYDOWN : switch(wParam)
                           {
                           case KEY_ESC_EXIT : PostMessage(hWnd, WM_CLOSE, 0, 0);
@@ -702,90 +716,49 @@ VOID OnPaint(HDC                        hdc,
       {
       commonObject_tPtr guiObject = ((commonObject_tPtr)objectHoldingRingCurrentIndex->linkObject);
 
+      // Traverse composite objects
       while (guiObject != nullptr)
         {
         switch(((graphicsObjectType_t)(guiObject->objectType)))
           {
-          case GRAPHICS_OBJECT_TYPE_RECTANGLE   : objectError = guiDrawRectangle(hdc,
-                                                                                 guiObject,
-                                                                                 canvasSize);
-                                                  break;
-        
-          case GRAPHICS_OBJECT_TYPE_STATIC_TEXT : objectError = drawStrokeText(hdc,
-                                                                               (const strokeTextStringDescriptor_tPtr)&headlineString,
-                                                                               characterList,
-                                                                               (const strokeFrame_tPtr)characterFrame,
-                                                                               (const canvasDescriptor_tPtr)canvasSize,
-                                                                               (const strokeGraphPointBase_tPtr)strokeGraphBase,
-                                                                                                               &strokeTextStringBoundary);
+          case GRAPHICS_OBJECT_TYPE_RECTANGLE    : objectError = guiDrawRectangle(hdc,
+                                                                                  guiObject,
+                                                                                  canvasSize);
+                                                   break;
+                                                 
+          case GRAPHICS_OBJECT_TYPE_STATIC_TEXT  : objectError = drawStrokeText(hdc,
+                                                                                ((staticTextObject_tPtr)guiObject)->staticText,
+                                                                                 characterList,
+                                                                                (const strokeFrame_tPtr)characterFrame,
+                                                                                (const canvasDescriptor_tPtr)canvasSize,
+                                                                                (const strokeGraphPointBase_tPtr)strokeGraphBase,
+                                                                                                                &strokeTextStringBoundary);
+                                                 
+// TEST :                                        
+#if (1)                                          
+                                                   strokeTextStringBoundary = { { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) }, { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) }};
+                                                 
+                                                   objectError = computeStrokeTextBoundary((const strokeTextStringDescriptor_tPtr)&headlineString,
+                                                                                           (const canvasDescriptor_tPtr)canvasSize,
+                                                                                                                       &strokeTextStringBoundary);
+#endif                                           
+// TEST :                                        
+                                                   break;
 
-// TEST :
-#if (1)
-                                                  strokeTextStringBoundary = { { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) }, { ((GRAPHICS_REAL)0.0), ((GRAPHICS_REAL)0.0) }};
+          case GRAPHICS_OBJECT_TYPE_RADIO_BUTTON : //objectError = drawRadioButton();
 
-                                                  objectError = computeStrokeTextBoundary((const strokeTextStringDescriptor_tPtr)&headlineString,
-                                                                                          (const canvasDescriptor_tPtr)canvasSize,
-                                                                                                                      &strokeTextStringBoundary);
-#endif
-// TEST :
-                                                  break;
+                                                   break;
 
-          case GRAPHICS_OBJECT_TYPE_NONE        : // currently "do nothing" for deviant cases - TBC!
-          case GRAPHICS_OBJECT_TYPE_UNKNOWN     : 
-          default                               :
-                                                  break;
+          case GRAPHICS_OBJECT_TYPE_NONE         : // currently "do nothing" for deviant cases - TBC!
+          case GRAPHICS_OBJECT_TYPE_UNKNOWN      : 
+          default                                :
+                                                   break;
           }
 
         guiObject = (commonObject_tPtr)guiObject->nextDrawingObject;
         }
       }
 
-    // TEST :
-#if (0)
-    // - draw a character from the loaded alphabet file
-    objectError = buildCharacterStrokeGraph(characterFrame,
-                                            strokeGraphBase);
-
-    objectError = fetchCharacterReference( ((GRAPHICS_UINT)'A'),
-                                           characterList,
-                                          &characterReference);
-
-    // One-by-one, point at the already extant line segments
-    while ((objectError = fetchCharacterExtantSegment( segmentIndex,
-                                                       characterReference,
-                                                      &nextLineSegment)) == GRAPHICS_NO_ERROR)
-      {
-      // "strokeGraphBase" may be the key to compressing the character...
-      strokeGraphBase->graphRowNumber    = 1024;
-      strokeGraphBase->graphColumnNumber = 1025;
-
-      objectError = drawLineSegment(hdc,
-                                    nextLineSegment,
-                                    LINE_SEGMENT_MODE_PASSIVE,
-                                    (const strokeFrame_tPtr)characterFrame,
-                                    (const canvasDescriptor_tPtr)canvasSize,
-                                    (const strokeGraphPointBase_tPtr)strokeGraphBase);
-
-      segmentIndex = segmentIndex + ((GRAPHICS_UINT)1);
-      }
-
-
-    objectError = normaliseCharacterSegments( characterReference,
-                                             &normalisedReference);
-#else
-    {
-#if (0)
-    objectError = drawStrokeCharacter(hdc,
-                                      (const GRAPHICS_UINT)strokeCharacter,
-                                      characterList,
-                                      (const strokeFrame_tPtr)characterFrame,
-                                      (const canvasDescriptor_tPtr)canvasSize,
-                                      (const strokeGraphPointBase_tPtr)strokeGraphBase);
-
-     strokeGraphBase->graphPoints = nullptr;
-#endif
-    }
-#endif
     // TEST :
 
     // On the flag, test to see if the mouse is in the (composite) objects' detection boundary
